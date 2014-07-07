@@ -28,7 +28,7 @@ public class TweetCount {
 		public void map(LongWritable key, Text value,
 				OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
-			output.collect(tweetNum, one); //単に1行読むごとに+1する。
+			if (value.getLength()>1) output.collect(tweetNum, one); //単に1行読むごとに+1する。データ収集時のミスで改行が余計に入っているので、改行のみの行をスキップする。
 		}
 	}
 	

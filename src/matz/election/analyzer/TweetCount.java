@@ -10,7 +10,7 @@ import org.apache.hadoop.mapred.*;
 
 /**選挙データ解析の端緒としてとりあえずMapReduceプログラミングを練習。<br>
  * →入力データはSeqFileに変換し直したので、[UserID]=[RawJSON]というk=vペアになっている。UserIDが読み取れなかったTweetはKeyに0が入っている。<br>
- * SequenceFileInputFormatは1つのK=VペアごとにMapperを呼び出すことに注意。TextInputFormatの場合は行ごと。
+ * SequenceFileInputFormatは1つのK=VペアごとにMapperを呼び出すことに注意。TextInputFormatの場合は行ごと。<br>
  * 色々と異なるMapper/Reducerを実装して、ツイートstatusに含まれる色々なキーに対してカウントを行えるようにしてみる。
  * @author Matsuzawa
  *

@@ -55,16 +55,19 @@ public class AnalyzerMain {
 	public static void main(String[] args) throws Exception {
 		JobConf job = null;
 		if (args.length > 0 && COUNT_JOB_LIST.contains(args[0])) {
+//			Class<?> jobClass = Class.forName(args[0]);
 			job = new JobConf(TweetCount.class);
-			if (args.length > 2 && !args[1].isEmpty() && !args[2].isEmpty()) {
+//			FileInputFormat.setInputPaths(job, DEFAULT_INPUT);
+//			FileOutputFormat.setOutputPath(job, new Path(DEFAULT_OUTPUT+System.currentTimeMillis()));
+			if (args.length > 2) {
 				FileInputFormat.setInputPaths(job, args[1]);
 				FileOutputFormat.setOutputPath(job, new Path(args[2]+System.currentTimeMillis()));
 			} else {
-				FileInputFormat.setInputPaths(job, DEFAULT_INPUT);
-				FileOutputFormat.setOutputPath(job, new Path(DEFAULT_OUTPUT+System.currentTimeMillis()));
+				System.err.println("Usage: <job> <inputPath> <outputPath>");
+				System.exit(1);
 			}
 		} else {
-			System.err.println("Specify jobClass:");
+			System.err.println("Specify job:");
 			for(String jobName : COUNT_JOB_ARRAY) {
 				System.err.println(jobName);
 			}

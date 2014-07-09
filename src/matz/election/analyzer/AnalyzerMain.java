@@ -4,9 +4,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import matz.election.analyzer.TweetCount.Map;
-import matz.election.analyzer.TweetCount.Reduce;
+import matz.election.analyzer.TweetCount.TextIntReduce;
+import matz.election.analyzer.TweetCount.TimeStampMap;
+import matz.election.analyzer.TweetCount.UserCountMap;
 import matz.election.analyzer.TweetCount.UserMap;
-import matz.election.analyzer.TweetCount.UserReduce;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -46,7 +47,8 @@ public class AnalyzerMain {
 	protected final static String[] COUNT_JOB_ARRAY = {
 		"TweetCount",
 		"UserTweetCount",
-		"HogeHoge"
+		"UserCount",
+		"TimeSeries"
 		};
 	protected static List<String> COUNT_JOB_LIST = Arrays.asList(COUNT_JOB_ARRAY);
 	/**
@@ -61,7 +63,12 @@ public class AnalyzerMain {
 //			FileOutputFormat.setOutputPath(job, new Path(DEFAULT_OUTPUT+System.currentTimeMillis()));
 			if (args.length > 2) {
 				FileInputFormat.setInputPaths(job, args[1]);
-				FileOutputFormat.setOutputPath(job, new Path(args[2]+System.currentTimeMillis()));
+				/* MapReduceのoutputはそのまま別のジョブのinputに使えるような形式になっている。
+				 * そのような連鎖的利用を考えると、後に指定しやすいようoutputのpath名は簡単であった方がいい。
+				 * 現在時刻を後置して重複を防ぐのは楽だが、あとでどのpathが最新（必要）なパスなのかがわかりにくくなって大変良くない。
+				 * HDFSのマウント先(/hdfs)でパスを検索してカウンターをインクリメントする、とかやってもいいと思うが、正直微妙。
+				 */
+				FileOutputFormat.setOutputPath(job, new Path(args[2]));
 			} else {
 				System.err.println("Usage: <job> <inputPath> <outputPath>");
 				System.exit(1);
@@ -78,11 +85,10 @@ public class AnalyzerMain {
 		/* データのエンコードもutf8になっていなかった。HadoopのTextInputFormatはutf8以外無理なので、データを修正した方がいいかもしれない。
 		 * →SeqFileに変換し直したので、入力はそれにならう。KeyはUserID(パース不正で読み込めなかった場合は0)、Valには元JSONが入っている。
 		 */
-//		job.setInputFormat(TextInputFormat.class);
-		job.setInputFormat(SequenceFileInputFormat.class);
-		
 		if (args[0].equals("TweetCount")) {
 			job.setJobName(args[0]);
+			
+			job.setInputFormat(SequenceFileInputFormat.class);
 			
 			job.setOutputKeyClass(Text.class);
 			job.setOutputValueClass(IntWritable.class);
@@ -90,11 +96,13 @@ public class AnalyzerMain {
 			job.setOutputFormat(TextOutputFormat.class);
 			
 			job.setMapperClass(Map.class);
-			job.setCombinerClass(Reduce.class);
-			job.setReducerClass(Reduce.class);
+			job.setCombinerClass(TextIntReduce.class);
+			job.setReducerClass(TextIntReduce.class);
 		}
 		else if (args[0].equals("UserTweetCount")) {
 			job.setJobName(args[0]);
+
+			job.setInputFormat(SequenceFileInputFormat.class);
 			
 			job.setOutputKeyClass(Text.class);
 			job.setOutputValueClass(IntWritable.class);
@@ -102,9 +110,38 @@ public class AnalyzerMain {
 			job.setOutputFormat(TextOutputFormat.class);
 			
 			job.setMapperClass(UserMap.class);
-			job.setCombinerClass(UserReduce.class);
-			job.setReducerClass(UserReduce.class);
+			job.setCombinerClass(TextIntReduce.class);
+			job.setReducerClass(TextIntReduce.class);
 		}
+		else if (args[0].equals("UserCount")) {
+			job.setJobName(args[0]);
+			
+			job.setInputFormat(TextInputFormat.class);
+			
+			job.setOutputKeyClass(Text.class);
+			job.setOutputValueClass(IntWritable.class);
+
+			job.setOutputFormat(TextOutputFormat.class);
+			
+			job.setMapperClass(UserCountMap.class);
+			job.setCombinerClass(TextIntReduce.class);
+			job.setReducerClass(TextIntReduce.class);
+		}
+		else if (args[0].equals("TimeSeries")) {
+			job.setJobName(args[0]);
+			
+			job.setInputFormat(SequenceFileInputFormat.class);
+			
+			job.setOutputKeyClass(Text.class);
+			job.setOutputValueClass(IntWritable.class);
+
+			job.setOutputFormat(TextOutputFormat.class);
+			
+			job.setMapperClass(TimeStampMap.class);
+			job.setCombinerClass(TextIntReduce.class);
+			job.setReducerClass(TextIntReduce.class);
+		}
+		
 		
 		job.setNumReduceTasks(BALANCED_REDUCE_NUM);
 		

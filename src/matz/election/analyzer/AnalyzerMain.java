@@ -37,9 +37,9 @@ public class AnalyzerMain {
 	public final static int IMMEDIATE_REDUCE_NUM = (int)(0.95*NUM_NODES*MAX_REDUCE_PER_NODE);
 	public final static int BALANCED_REDUCE_NUM = (int)(1.75*NUM_NODES*MAX_REDUCE_PER_NODE);
 	
-	// TODO
-	/* 残念なことに0.20.2-cdh3u6はbzip2にまだネイティブ対応していなかった。<br>
+	/* 残念なことに0.20.2-cdh3u6はbzip2にまだネイティブ対応していなかった。
 	 * LZOに圧縮し直すか、SeqFileに変換するなどの善後策を要する。gzipももちろん無理。
+	 * →結局Block単位で圧縮したSeqFileに変換し直した。
 	 */
 	protected final static String DEFAULT_INPUT = "/user/data/twitter2013july";
 	protected final static String DEFAULT_OUTPUT = "/user/matsuzawa/electionAnalyzer";
@@ -72,16 +72,18 @@ public class AnalyzerMain {
 		}
 		
 		
-		/* ログファイルのエンコードもutf8になっていなかった。HadoopのTextInputFormatはutf8以外無理なので、データを修正した方がいいかもしれない。<br>
-		 * SeqFileに直す場合、何らかのKey-Valueペアにする必要があるのでそっちは微妙かも？<br>
+		/* データのエンコードもutf8になっていなかった。HadoopのTextInputFormatはutf8以外無理なので、データを修正した方がいいかもしれない。
+		 * →SeqFileに変換し直したので、入力はそれにならう。KeyはUserID(パース不正で読み込めなかった場合は0)、Valには元JSONが入っている。
 		 */
+//		job.setInputFormat(TextInputFormat.class);
+		job.setInputFormat(SequenceFileInputFormat.class);
+		
 		if (args[0].equals("TweetCount")) {
 			job.setJobName(args[0]);
 			
 			job.setOutputKeyClass(Text.class);
 			job.setOutputValueClass(IntWritable.class);
 					
-			job.setInputFormat(TextInputFormat.class);
 			job.setOutputFormat(TextOutputFormat.class);
 			
 			job.setMapperClass(Map.class);
@@ -93,8 +95,7 @@ public class AnalyzerMain {
 			
 			job.setOutputKeyClass(Text.class);
 			job.setOutputValueClass(IntWritable.class);
-					
-			job.setInputFormat(TextInputFormat.class);
+
 			job.setOutputFormat(TextOutputFormat.class);
 			
 			job.setMapperClass(UserMap.class);

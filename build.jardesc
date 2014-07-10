@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="//str33/matsuzawa/ElectionAnalyzer.jar"/>
+    <jar path="//str33/matsuzawa/lib/ElectionAnalyzer.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/ElectionAnalyzer/build.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>

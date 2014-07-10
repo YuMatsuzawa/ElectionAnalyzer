@@ -1,17 +1,7 @@
 package matz.election.analyzer;
 
-import java.util.Arrays;
-import java.util.List;
-
-import matz.election.analyzer.TweetCount.Map;
-import matz.election.analyzer.TweetCount.TextIntReduce;
-import matz.election.analyzer.TweetCount.TimeStampMap;
-import matz.election.analyzer.TweetCount.UserCountMap;
-import matz.election.analyzer.TweetCount.UserMap;
-
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.*;
 
 /**本パッケージにおいて、解析のためのエントリポイントとなるクラス。<br>
@@ -42,23 +32,76 @@ public class AnalyzerMain {
 	 * LZOに圧縮し直すか、SeqFileに変換するなどの善後策を要する。gzipももちろん無理。
 	 * →結局Block単位で圧縮したSeqFileに変換し直した。
 	 */
-	protected final static String DEFAULT_INPUT = "/user/data/twitter2013july";
-	protected final static String DEFAULT_OUTPUT = "/user/matsuzawa/electionAnalyzer";
-	protected final static String[] COUNT_JOB_ARRAY = {
-		"TweetCount",
-		"UserTweetCount",
-		"UserCount",
-		"TimeSeries"
-		};
-	protected static List<String> COUNT_JOB_LIST = Arrays.asList(COUNT_JOB_ARRAY);
+//	protected final static String DEFAULT_INPUT = "/user/data/twitter2013july";
+//	protected final static String DEFAULT_OUTPUT = "/user/matsuzawa/electionAnalyzer";
+//	protected final static String[] COUNT_JOB_ARRAY = {
+//		"TweetCount",
+//		"UserTweetCount",
+//		"UserCount",
+//		"TimeSeries"
+//		};
+//	protected static List<String> COUNT_JOB_LIST = Arrays.asList(COUNT_JOB_ARRAY);
+	
+	protected final static String PROP_SEQ_INPUT = "SequenceFileInputFormat";
+	protected final static String PROP_TEXT_INPUT = "TextInputFormat";
+	protected final static String PROP_SEQ_OUTPUT = "SequenceFileOutputFormat";
+	protected final static String PROP_TEXT_OUTPUT = "TextOutputFormat";
+	protected final static String PROP_TEXT = "Text";
+	protected final static String PROP_LONG = "LongWritable";
+	protected final static String PROP_INT = "IntWritable";
+	
+	protected final static String INPUT_FORMAT_PACKAGE_SUFFIX = "org.apache.hadoop.mapred.";
+	protected final static String WRITABLE_PACKAGE_SUFFIX = "org.apache.hadoop.io.";
+	
+	protected final static int PROP_INDEX_JOB_NAME = 0, PROP_INDEX_JOB_CLASS = 1, PROP_INDEX_MAP_CLASS = 2,
+			PROP_INDEX_REDUCE_CLASS = 3, PROP_INDEX_USAGE = 4, PROP_INDEX_INPUT_FORMAT = 5, PROP_INDEX_OUTPUT_FORMAT = 6,
+			PROP_INDEX_OUTPUT_KEY_CLASS = 7, PROP_INDEX_OUTPUT_VALUE_CLASS = 8;
+	protected final static String[][] JOB_PROP = {
+		{"TweetCount","TweetCount","Map","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT},
+		{"UserTweetCount","TweetCount","UserMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT},
+		{"UserCount","TweetCount","UserCountMap","TextIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT},
+		{"TimeSeries","TweetCount","TimeStampMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT},
+	};
+	
+	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。
+	 * 
+	 */
+	private static void jobList() {
+		for (String[] prop : JOB_PROP) {
+			System.out.println(prop[PROP_INDEX_JOB_NAME] + "\t" + "Usage: " + prop[PROP_INDEX_JOB_NAME] + prop[PROP_INDEX_USAGE]);
+		}
+	}
+	
 	/**
 	 * @param args
 	 */
+	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws Exception {
 		JobConf job = null;
-		if (args.length > 0 && COUNT_JOB_LIST.contains(args[0])) {
-//			Class<?> jobClass = Class.forName(args[0]);
-			job = new JobConf(TweetCount.class);
+		int jobIndex = 0;
+		String curPackage = AnalyzerMain.class.getPackage().getName().concat(".");
+		
+//		if (args.length > 0 && COUNT_JOB_LIST.contains(args[0])) {
+		if (args.length == 0) {
+			System.err.println("Specify job:");
+//			for(String jobName : COUNT_JOB_ARRAY) {
+//				System.err.println(jobName);
+//			}
+			jobList();
+			System.exit(1);
+		} else {
+			do {
+				if (jobIndex >= JOB_PROP.length) {
+					System.err.println("Available jobs:");
+					jobList();
+					System.exit(1);
+				}
+				if (args[0].equals(JOB_PROP[jobIndex][PROP_INDEX_JOB_NAME])) break;
+				jobIndex++;
+			} while(true);
+			
+//			job = new JobConf(TweetCount.class);
+			job = new JobConf(Class.forName(curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS]));
 //			FileInputFormat.setInputPaths(job, DEFAULT_INPUT);
 //			FileOutputFormat.setOutputPath(job, new Path(DEFAULT_OUTPUT+System.currentTimeMillis()));
 			if (args.length > 2) {
@@ -70,77 +113,91 @@ public class AnalyzerMain {
 				 */
 				FileOutputFormat.setOutputPath(job, new Path(args[2]));
 			} else {
-				System.err.println("Usage: <job> <inputPath> <outputPath>");
+				System.err.println("Usage: " + JOB_PROP[jobIndex][PROP_INDEX_JOB_NAME] + JOB_PROP[jobIndex][PROP_INDEX_USAGE]);
 				System.exit(1);
 			}
-		} else {
-			System.err.println("Specify job:");
-			for(String jobName : COUNT_JOB_ARRAY) {
-				System.err.println(jobName);
-			}
-			System.exit(1);
 		}
 		
 		
 		/* データのエンコードもutf8になっていなかった。HadoopのTextInputFormatはutf8以外無理なので、データを修正した方がいいかもしれない。
 		 * →SeqFileに変換し直したので、入力はそれにならう。KeyはUserID(パース不正で読み込めなかった場合は0)、Valには元JSONが入っている。
 		 */
-		if (args[0].equals("TweetCount")) {
-			job.setJobName(args[0]);
-			
-			job.setInputFormat(SequenceFileInputFormat.class);
-			
-			job.setOutputKeyClass(Text.class);
-			job.setOutputValueClass(IntWritable.class);
-					
-			job.setOutputFormat(TextOutputFormat.class);
-			
-			job.setMapperClass(Map.class);
-			job.setCombinerClass(TextIntReduce.class);
-			job.setReducerClass(TextIntReduce.class);
-		}
-		else if (args[0].equals("UserTweetCount")) {
-			job.setJobName(args[0]);
-
-			job.setInputFormat(SequenceFileInputFormat.class);
-			
-			job.setOutputKeyClass(Text.class);
-			job.setOutputValueClass(IntWritable.class);
-
-			job.setOutputFormat(TextOutputFormat.class);
-			
-			job.setMapperClass(UserMap.class);
-			job.setCombinerClass(TextIntReduce.class);
-			job.setReducerClass(TextIntReduce.class);
-		}
-		else if (args[0].equals("UserCount")) {
-			job.setJobName(args[0]);
-			
-			job.setInputFormat(TextInputFormat.class);
-			
-			job.setOutputKeyClass(Text.class);
-			job.setOutputValueClass(IntWritable.class);
-
-			job.setOutputFormat(TextOutputFormat.class);
-			
-			job.setMapperClass(UserCountMap.class);
-			job.setCombinerClass(TextIntReduce.class);
-			job.setReducerClass(TextIntReduce.class);
-		}
-		else if (args[0].equals("TimeSeries")) {
-			job.setJobName(args[0]);
-			
-			job.setInputFormat(SequenceFileInputFormat.class);
-			
-			job.setOutputKeyClass(Text.class);
-			job.setOutputValueClass(IntWritable.class);
-
-			job.setOutputFormat(TextOutputFormat.class);
-			
-			job.setMapperClass(TimeStampMap.class);
-			job.setCombinerClass(TextIntReduce.class);
-			job.setReducerClass(TextIntReduce.class);
-		}
+		
+		
+//		if (args[0].equals("TweetCount")) {
+//			job.setJobName(args[0]);
+//			
+//			job.setInputFormat(SequenceFileInputFormat.class);
+//			
+//			job.setOutputKeyClass(Text.class);
+//			job.setOutputValueClass(IntWritable.class);
+//					
+//			job.setOutputFormat(TextOutputFormat.class);
+//			
+//			job.setMapperClass(Map.class);
+//			job.setCombinerClass(TextIntReduce.class);
+//			job.setReducerClass(TextIntReduce.class);
+//		}
+//		else if (args[0].equals("UserTweetCount")) {
+//			job.setJobName(args[0]);
+//
+//			job.setInputFormat(SequenceFileInputFormat.class);
+//			
+//			job.setOutputKeyClass(Text.class);
+//			job.setOutputValueClass(IntWritable.class);
+//
+//			job.setOutputFormat(TextOutputFormat.class);
+//			
+//			job.setMapperClass(UserMap.class);
+//			job.setCombinerClass(TextIntReduce.class);
+//			job.setReducerClass(TextIntReduce.class);
+//		}
+//		else if (args[0].equals("UserCount")) {
+//			job.setJobName(args[0]);
+//			
+//			job.setInputFormat(TextInputFormat.class);
+//			
+//			job.setOutputKeyClass(Text.class);
+//			job.setOutputValueClass(IntWritable.class);
+//
+//			job.setOutputFormat(TextOutputFormat.class);
+//			
+//			job.setMapperClass(UserCountMap.class);
+//			job.setCombinerClass(TextIntReduce.class);
+//			job.setReducerClass(TextIntReduce.class);
+//		}
+//		else if (args[0].equals("TimeSeries")) {
+//			job.setJobName(args[0]);
+//			
+//			job.setInputFormat(SequenceFileInputFormat.class);
+//			
+//			job.setOutputKeyClass(Text.class);
+//			job.setOutputValueClass(IntWritable.class);
+//
+//			job.setOutputFormat(TextOutputFormat.class);
+//			
+//			job.setMapperClass(TimeStampMap.class);
+//			job.setCombinerClass(TextIntReduce.class);
+//			job.setReducerClass(TextIntReduce.class);
+//		}
+		
+		job.setJobName(JOB_PROP[jobIndex][PROP_INDEX_JOB_NAME]);
+		job.setInputFormat((Class<? extends InputFormat<Writable,Writable>>) Class.forName(
+				INPUT_FORMAT_PACKAGE_SUFFIX + JOB_PROP[jobIndex][PROP_INDEX_INPUT_FORMAT]));
+		job.setOutputFormat((Class<? extends OutputFormat<Writable,Writable>>) Class.forName(
+				INPUT_FORMAT_PACKAGE_SUFFIX + JOB_PROP[jobIndex][PROP_INDEX_OUTPUT_FORMAT]));
+		job.setOutputKeyClass(Class.forName(
+				WRITABLE_PACKAGE_SUFFIX + JOB_PROP[jobIndex][PROP_INDEX_OUTPUT_KEY_CLASS]));
+		job.setOutputValueClass(Class.forName(
+				WRITABLE_PACKAGE_SUFFIX + JOB_PROP[jobIndex][PROP_INDEX_OUTPUT_VALUE_CLASS]));
+		job.setMapperClass((Class<? extends Mapper<Writable,Writable,Writable,Writable>>) Class.forName(
+				curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS] + "$" + JOB_PROP[jobIndex][PROP_INDEX_MAP_CLASS]));
+		job.setCombinerClass((Class<? extends Reducer<Writable,Writable,Writable,Writable>>) Class.forName(
+				curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS] + "$" + JOB_PROP[jobIndex][PROP_INDEX_REDUCE_CLASS]));
+		job.setReducerClass((Class<? extends Reducer<Writable,Writable,Writable,Writable>>) Class.forName(
+				curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS] + "$" + JOB_PROP[jobIndex][PROP_INDEX_REDUCE_CLASS]));
+		
+		
 		
 		
 		job.setNumReduceTasks(BALANCED_REDUCE_NUM);

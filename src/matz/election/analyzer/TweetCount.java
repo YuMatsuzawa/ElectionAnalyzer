@@ -19,10 +19,6 @@ import twitter4j.TwitterObjectFactory;
  * @author Matsuzawa
  *
  */
-/**
- * @author Matsuzawa
- *
- */
 public class TweetCount {
 	
 	/**最も単純に総ツイート数を数えるためのMapper。1ペア読むごとに総数を加算する。<br>

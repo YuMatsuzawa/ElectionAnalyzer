@@ -43,7 +43,7 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 					tweet = TwitterObjectFactory.createStatus(value.toString());
 					for (URLEntity url : tweet.getURLEntities()) { //もしURL添付がなければ配列は空である。よってループは1回も回らずに抜ける。すると初期化時の"noURL"キーがそのまま残る。
 						String urlStr = url.getExpandedURL(); //展開済みURLを使う。
-						if (urlStr == null) urlStr = url.getURL(); //展開済みが使えなければURLを使うが、
+						if (urlStr == null) urlStr = url.getURL(); //展開済みが使えなければURLを使うが、ここには外部の短縮サービスで短縮されたURLが入っていることもある。
 						urlText.set(urlStr);
 						output.collect(urlText, one);
 						

@@ -29,8 +29,9 @@ public class AnalyzerMain {
 	 */
 	private final static int NUM_NODES = 9;
 	private final static int MAX_REDUCE_PER_NODE = 2;
-	public final static int IMMEDIATE_REDUCE_NUM = (int)(0.95*NUM_NODES*MAX_REDUCE_PER_NODE);
-	public final static int BALANCED_REDUCE_NUM = (int)(1.75*NUM_NODES*MAX_REDUCE_PER_NODE);
+	public final static String IMMEDIATE_REDUCE_NUM = String.valueOf((int)(0.95*NUM_NODES*MAX_REDUCE_PER_NODE));
+	public final static String BALANCED_REDUCE_NUM = String.valueOf((int)(1.75*NUM_NODES*MAX_REDUCE_PER_NODE));
+	public final static String SINGLE_REDUCE_NUM = "1";
 	
 	/* 残念なことに0.20.2-cdh3u6はbzip2にまだネイティブ対応していなかった。
 	 * LZOに圧縮し直すか、SeqFileに変換するなどの善後策を要する。gzipももちろん無理。
@@ -59,19 +60,20 @@ public class AnalyzerMain {
 	
 	protected final static int PROP_INDEX_JOB_NAME = 0, PROP_INDEX_JOB_CLASS = 1, PROP_INDEX_MAP_CLASS = 2,
 			PROP_INDEX_REDUCE_CLASS = 3, PROP_INDEX_USAGE = 4, PROP_INDEX_INPUT_FORMAT = 5, PROP_INDEX_OUTPUT_FORMAT = 6,
-			PROP_INDEX_OUTPUT_KEY_CLASS = 7, PROP_INDEX_OUTPUT_VALUE_CLASS = 8;
+			PROP_INDEX_OUTPUT_KEY_CLASS = 7, PROP_INDEX_OUTPUT_VALUE_CLASS = 8, PROP_INDEX_REDUCE_NUM = 9;
 	
 	
 	/**使用可能なジョブについての情報を保持する2次元配列。<br>
 	 * ジョブは適当な名前をつけ、同一パッケージのクラス内に使用するMapper/Reducerをサブクラスとして定義する。<br>
-	 * 本配列内にジョブ名、定義クラス、使用するMapper名、Reducer名、引数、入力ファイルフォーマット、出力ファイルフォーマット、出力Key形式、出力Value形式をStringで記述する。<br>
+	 * 本配列内にジョブ名、定義クラス、使用するMapper名、Reducer名、引数、入力ファイルフォーマット、出力ファイルフォーマット、出力Key形式、出力Value形式、Reducer数をStringで記述する。<br>
 	 * main関数内で、本配列に登録された各種クラスを名前引きでロードし、jobインスタンスに投入、job実行する。
 	 */
 	protected final static String[][] JOB_PROP = {
-		{"TweetCount","TweetCount","Map","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT},
-		{"UserTweetCount","TweetCount","UserMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT},
-		{"UserCount","TweetCount","UserCountMap","TextIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT},
-		{"TimeSeries","TweetCount","TimeStampMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT},
+		{"TweetCount","TweetCount","Map","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
+		{"UserTweetCount","TweetCount","UserTweetMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
+		{"UserCount","TweetCount","UserCountMap","TextIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
+		{"TimeSeries","TweetCount","TimeStampMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
+		{"URLCount","URLTweet","URLCountMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。
@@ -210,9 +212,12 @@ public class AnalyzerMain {
 		
 		
 		
-		
-		job.setNumReduceTasks(BALANCED_REDUCE_NUM);
-		
+		try {
+			job.setNumReduceTasks(Integer.parseInt(JOB_PROP[jobIndex][PROP_INDEX_REDUCE_NUM]));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 		JobClient.runJob(job);
 		
 	}

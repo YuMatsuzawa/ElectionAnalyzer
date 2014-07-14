@@ -70,7 +70,7 @@ public class TweetCount {
 	 * @author Matsuzawa
 	 *
 	 */
-	public static class UserMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
+	public static class UserTweetMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
 		private static final IntWritable one = new IntWritable(1);
 		private Text userid = new Text();
 		

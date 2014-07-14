@@ -95,6 +95,7 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 	 *
 	 */
 	public static class BuzzExtractMap extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, Text>, JobConfigurable {
+		//引数など、設定情報をコマンドラインやmain内から得たい場合は、JobCinfigurableをimplementしてconfigureを実装する。
 		private int buzzThreshold = URLTweet.BUZZ_THRESHOLD;
 		
 		private IntWritable count = new IntWritable();

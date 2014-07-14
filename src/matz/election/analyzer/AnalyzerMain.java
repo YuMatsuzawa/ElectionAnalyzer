@@ -37,16 +37,7 @@ public class AnalyzerMain {
 	 * LZOに圧縮し直すか、SeqFileに変換するなどの善後策を要する。gzipももちろん無理。
 	 * →結局Block単位で圧縮したSeqFileに変換し直した。
 	 */
-//	protected final static String DEFAULT_INPUT = "/user/data/twitter2013july";
-//	protected final static String DEFAULT_OUTPUT = "/user/matsuzawa/electionAnalyzer";
-//	protected final static String[] COUNT_JOB_ARRAY = {
-//		"TweetCount",
-//		"UserTweetCount",
-//		"UserCount",
-//		"TimeSeries"
-//		};
-//	protected static List<String> COUNT_JOB_LIST = Arrays.asList(COUNT_JOB_ARRAY);
-	
+
 	protected final static String PROP_SEQ_INPUT = "SequenceFileInputFormat";
 	protected final static String PROP_TEXT_INPUT = "TextInputFormat";
 	protected final static String PROP_SEQ_OUTPUT = "SequenceFileOutputFormat";
@@ -70,10 +61,12 @@ public class AnalyzerMain {
 	 */
 	protected final static String[][] JOB_PROP = {
 		{"TweetCount","TweetCount","Map","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
-		{"UserTweetCount","TweetCount","UserTweetMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
+		{"UserTweetCount","TweetCount","UserTweetMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
 		{"UserCount","TweetCount","UserCountMap","TextIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
-		{"TimeSeries","TweetCount","TimeStampMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
+		{"TimeSeries","TweetCount","TimeStampMap","LongIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM},
 		{"URLCount","URLTweet","URLCountMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
+		{"URLFreq","URLTweet","URLFreqMap","IntIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_INT,SINGLE_REDUCE_NUM},
+		{"BuzzExtract","URLTweet","BuzzExtractMap","BuzzExtractReduce"," <input_textFile_Path> <outputPath> [<buzzThreshold>]",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM},
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。
@@ -125,6 +118,11 @@ public class AnalyzerMain {
 				 * HDFSのマウント先(/hdfs)でパスを検索してカウンターをインクリメントする、とかやってもいいと思うが、正直微妙。
 				 */
 				FileOutputFormat.setOutputPath(job, new Path(args[2]));
+
+				//残りのコマンドライン引数を全てjobConfのプロパティとして渡す。これはMapperやReducer内部からcontext経由で取得できる。
+				for (int i = 3; i < args.length; i++) {
+					job.set(String.format("arg%d",i), args[i]);
+				}
 			} else {
 				System.err.println("Usage: " + JOB_PROP[jobIndex][PROP_INDEX_JOB_NAME] + JOB_PROP[jobIndex][PROP_INDEX_USAGE]);
 				System.exit(1);
@@ -134,66 +132,7 @@ public class AnalyzerMain {
 		
 		/* データのエンコードもutf8になっていなかった。HadoopのTextInputFormatはutf8以外無理なので、データを修正した方がいいかもしれない。
 		 * →SeqFileに変換し直したので、入力はそれにならう。KeyはUserID(パース不正で読み込めなかった場合は0)、Valには元JSONが入っている。
-		 */
-		
-		
-//		if (args[0].equals("TweetCount")) {
-//			job.setJobName(args[0]);
-//			
-//			job.setInputFormat(SequenceFileInputFormat.class);
-//			
-//			job.setOutputKeyClass(Text.class);
-//			job.setOutputValueClass(IntWritable.class);
-//					
-//			job.setOutputFormat(TextOutputFormat.class);
-//			
-//			job.setMapperClass(Map.class);
-//			job.setCombinerClass(TextIntReduce.class);
-//			job.setReducerClass(TextIntReduce.class);
-//		}
-//		else if (args[0].equals("UserTweetCount")) {
-//			job.setJobName(args[0]);
-//
-//			job.setInputFormat(SequenceFileInputFormat.class);
-//			
-//			job.setOutputKeyClass(Text.class);
-//			job.setOutputValueClass(IntWritable.class);
-//
-//			job.setOutputFormat(TextOutputFormat.class);
-//			
-//			job.setMapperClass(UserMap.class);
-//			job.setCombinerClass(TextIntReduce.class);
-//			job.setReducerClass(TextIntReduce.class);
-//		}
-//		else if (args[0].equals("UserCount")) {
-//			job.setJobName(args[0]);
-//			
-//			job.setInputFormat(TextInputFormat.class);
-//			
-//			job.setOutputKeyClass(Text.class);
-//			job.setOutputValueClass(IntWritable.class);
-//
-//			job.setOutputFormat(TextOutputFormat.class);
-//			
-//			job.setMapperClass(UserCountMap.class);
-//			job.setCombinerClass(TextIntReduce.class);
-//			job.setReducerClass(TextIntReduce.class);
-//		}
-//		else if (args[0].equals("TimeSeries")) {
-//			job.setJobName(args[0]);
-//			
-//			job.setInputFormat(SequenceFileInputFormat.class);
-//			
-//			job.setOutputKeyClass(Text.class);
-//			job.setOutputValueClass(IntWritable.class);
-//
-//			job.setOutputFormat(TextOutputFormat.class);
-//			
-//			job.setMapperClass(TimeStampMap.class);
-//			job.setCombinerClass(TextIntReduce.class);
-//			job.setReducerClass(TextIntReduce.class);
-//		}
-		
+		 */	
 		job.setJobName(JOB_PROP[jobIndex][PROP_INDEX_JOB_NAME]);
 		job.setInputFormat((Class<? extends InputFormat<Writable,Writable>>) Class.forName(
 				INPUT_FORMAT_PACKAGE_SUFFIX + JOB_PROP[jobIndex][PROP_INDEX_INPUT_FORMAT]));
@@ -209,8 +148,6 @@ public class AnalyzerMain {
 				curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS] + "$" + JOB_PROP[jobIndex][PROP_INDEX_REDUCE_CLASS]));
 		job.setReducerClass((Class<? extends Reducer<Writable,Writable,Writable,Writable>>) Class.forName(
 				curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS] + "$" + JOB_PROP[jobIndex][PROP_INDEX_REDUCE_CLASS]));
-		
-		
 		
 		try {
 			job.setNumReduceTasks(Integer.parseInt(JOB_PROP[jobIndex][PROP_INDEX_REDUCE_NUM]));

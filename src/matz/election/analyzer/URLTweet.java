@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import matz.election.analyzer.util.URLExpander;
+
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -89,7 +91,7 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 	
 	/**URLCountで得た結果から、そこそこ話題になった（多くのツイートで言及された）URL=BuzzURLを抽出し、言及回数ごとにCSVとしてまとめる。<br>
 	 * 後にこのデータを元にクラスタリングとかしたらいいんじゃない？<br>
-	 * Buzzの閾値は定数BUZZ_THRESHOLDで定める。デフォルト100。引数で変更可能。<br>
+	 * Buzzの閾値は定数BUZZ_THRESHOLDで定める。デフォルト100。inpath/outpathの後の第3引数で変更可能。<br>
 	 * 入力はTextなのでLong,Text。出力はInt,Text。Keyには言及回数、Valueにはスペース区切りで該当URLがappendされたもの。
 	 * @author Matsuzawa
 	 *
@@ -137,7 +139,7 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 		}
 	}
 	
-	/**BuzzExtractMapのためのReducer。Iteratorが返すTextのURLを、スペース区切りを入れて次々AppendしていったものをValueに投入する。
+	/**BuzzExtractMapのためのReducer。Iteratorが返すTextのURLを、スペース区切りを入れて次々AppendしていったものをValueに投入する。<br>
 	 * @author Matsuzawa
 	 *
 	 */
@@ -153,7 +155,42 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 			}
 			output.collect(key, new Text(urls));
 		}
+	}
+	
+	/**リストアップされたBuzzURLに実際にコネクションを開き、URLを取得する。結果、転送先が同一のURLだったものについてはマージ(言及数を合計)する。<br>
+	 * 出力としてはURLCountと同じ、Text,Int形式になる。このMapReduceの結果を再びBuzzExtractに飲ませれば、URLが展開されたBuzzリストが得られる。<br>
+	 * ReducerはTextIntReduceでよい。出力はTextFileとする。<br>
+	 * 多分このマップはHTTPコネクションを開きまくるので非常にネットワーク負荷・メモリ負荷が高い。<br>
+	 * 多少なりとも抑制するためにwaitを入れた方がいい？
+	 * @author Matsuzawa
+	 *
+	 */
+	public static class BuzzURLExpandMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
+//		private IntWritable count = new IntWritable();
+		private Text url = new Text();
 		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<Text, IntWritable> output, Reporter reporter)
+				throws IOException {
+			String[] urls = value.toString().split("\\s");
+			int count = Integer.parseInt(urls[0]);
+			for (String shortOrLongUrl : urls) {
+				String longUrlOrNull = URLExpander.expand(shortOrLongUrl);		// let expand() return null if given URL cannot be opened (Exception'ed)
+				try {
+					Thread.sleep(50); //waitを入れてみる
+				} catch (InterruptedException e) {
+					//do nothing
+				}
+				if (longUrlOrNull != null) {
+//					count.set();
+					url.set(longUrlOrNull);
+//					url.set("hoge");
+					output.collect(url, new IntWritable(count));
+				}
+			}
+//			output.collect(new Text("soto"),new IntWritable(count));
+		}
 	}
 	
 	public static class TextIntReduce extends TweetCount.TextIntReduce {};

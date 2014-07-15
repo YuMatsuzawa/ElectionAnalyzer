@@ -36,28 +36,8 @@ public class TweetCount {
 		public void map(LongWritable key, Text value,
 				OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
-			if (value.getLength()>1) output.collect(tweetNum, one); //ValueはRawJSON．中身があることを一応確認してカウントアップする。
-			if (key.get()==0) output.collect(errorNum, one); //UserIDが0ならカウントアップ。
-		}
-	}
-	
-	/**Text, IntWritable形式のK,Vペアに対する単純な集計Reducer。<br>
-	 * Map, UserMap, UserCountMap全てに対して使える。
-	 * @author Matsuzawa
-	 *
-	 */
-	public static class TextIntReduce extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
-
-		@Override
-		public void reduce(Text key, Iterator<IntWritable> values,
-				OutputCollector<Text, IntWritable> output, Reporter reporter)
-				throws IOException {
-			/* ここの処理は、Reducerに送られてくるkey=valペアの集合（厳密には、あるkeyに対応するval集合のイテレータ）に対して行われる。
-			 * 単に、あるkeyに対応するvalの数を合計する、といった内容なら、その中身を精査する処理はいらない。
-			 */
-			int sum = 0;
-			while (values.hasNext()) sum += values.next().get();
-			output.collect(key, new IntWritable(sum));
+			if (value.getLength()>1) output.collect(tweetNum, one);		//ValueはRawJSON．中身があることを一応確認してカウントアップする。
+			if (key.get()==0) output.collect(errorNum, one);			//UserIDが0ならカウントアップ。
 		}
 	}
 	
@@ -65,12 +45,12 @@ public class TweetCount {
 	 * Note:Interface Mapperの引数k1,v1,k2,v2のうちk1,v1の型と内容はInputFormatの分割形式に依存する。<br>
 	 * 例えばTextInputFormatなら行単位(k1はLongWritableのポインタ、v1は現在行のText)であり、Mapperは1行ごとに呼ばれる。<br>
 	 * これを前提としてMapperの作業内容を構築する。<br>
-	 * SeqFileInputFormatならK=Vペア単位でMapperが呼ばれ、k1は
+	 * SeqFileInputFormatならK=Vペア単位でMapperが呼ばれ、k1,v1はそれぞれ入力ファイルのkey形式、value形式。<br>
 	 * 返り値に当たるのはk2,v2で、これの形式はMapper内で指定し、これをOutputCollectorに渡す。<br>
 	 * @author Matsuzawa
 	 *
 	 */
-	public static class UserMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
+	public static class UserTweetMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
 		private static final IntWritable one = new IntWritable(1);
 		private Text userid = new Text();
 		
@@ -81,29 +61,13 @@ public class TweetCount {
 			if (key.get()!=0) {
 				userid.set(key.toString());
 			} else {
-				userid.set("unparsable userID");
+				userid.set("unparsable_user");
 			}
 			output.collect(userid, one);
 		}
 		
 	}
-	
-	/**ユーザごとにツイート数を数えるためのReducer。同一Keyに対するValueを集計する。
-	 * @author Matsuzawa
-	 *
-	 */
-	public static class UserReduce extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
-
-		@Override
-		public void reduce(Text key, Iterator<IntWritable> values,
-				OutputCollector<Text, IntWritable> output, Reporter reporter)
-				throws IOException {
-			int sum = 0;
-			while(values.hasNext()) sum += values.next().get();
-			output.collect(key, new IntWritable(sum));
-		}
-	}
-	
+		
 	/**ユーザ自体を数えるMapper。UserTweetCountによって出力された結果を使う。（行を数える）<br>
 	 * 入力はTextInputFormatでLongWritable,Text。行ごとにMapperが呼ばれる。<br>
 	 * せっかくなので度数分布に使えるようにツイート数に対する人数(XtweetしているのはY人)もカウントする。
@@ -127,47 +91,89 @@ public class TweetCount {
 			output.collect(tweetNum, one);
 		}
 	}
-	
-	/**ユーザ自体を数えるReducer。だけど中身同じだからTextIntReduceで代用するのを試す。
-	 * @author Matsuzawa
-	 *
-	 */
-	public static class UserCountReduce extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
-
-		@Override
-		public void reduce(Text key, Iterator<IntWritable> values,
-				OutputCollector<Text, IntWritable> output, Reporter reporter)
-				throws IOException {
-			int sum = 0;
-			while(values.hasNext()) sum += values.next().get();
-			output.collect(key, new IntWritable(sum));
-		}
-	}
-	
+		
 	/**秒単位で、時刻あたりのツイート数をカウントするMapper。<br>
 	 * 例：XXXX/YY/ZZ-AA:BB:CCにV個のツイート。<br>
+	 * ただ、ソートしたい関係上KeyはLongにする。後にデータを使うときに可読カレンダー型にパースせよ。<br>
 	 * SeqFileをInputとする。
 	 * @author Matsuzawa
 	 *
 	 */
-	public static class TimeStampMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
+	public static class TimeStampMap extends MapReduceBase implements Mapper<LongWritable, Text, LongWritable, IntWritable> {
 		private static final IntWritable one = new IntWritable(1);
-		private Text dateText = new Text();
+		private LongWritable dateLong = new LongWritable();
 		@Override
 		public void map(LongWritable key, Text value,
-				OutputCollector<Text, IntWritable> output, Reporter reporter)
+				OutputCollector<LongWritable, IntWritable> output, Reporter reporter)
 				throws IOException {
 			try {
 				Status tweet = TwitterObjectFactory.createStatus(value.toString());
 //				long timeStampInSecond = tweet.getCreatedAt().toString();
 //				Date dateInSecond = new Date(timeStampInSecond*1000);
-				dateText.set(tweet.getCreatedAt().toString());
-				output.collect(dateText, one);
+				dateLong.set(tweet.getCreatedAt().getTime());
+				output.collect(dateLong, one);
 			} catch (TwitterException e) {
 				//do nothing
 			} catch (Exception e) {
 				//do nothing
 			}
+		}
+		
+	}
+	
+	/**Text, IntWritable形式のK,Vペアに対する単純な集計Reducer。<br>
+	 * KeyがTextであるMapに対して使える。このとき、ソートは辞書順になることに注意する。(例：1,10,11,12,2,20,21,22,3,30,...）<br>
+	 * 辞書的でなく、数値としてソートしたい場合はKeyの規模に応じてLongIntかIntIntReduceを使う。<br>
+	 * @author Matsuzawa
+	 *
+	 */
+	public static class TextIntReduce extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
+
+		@Override
+		public void reduce(Text key, Iterator<IntWritable> values,
+				OutputCollector<Text, IntWritable> output, Reporter reporter)
+				throws IOException {
+			/* ここの処理は、Reducerに送られてくるkey=valペアの集合（厳密には、あるkeyに対応するval集合のイテレータ）に対して行われる。
+			 * 単に、あるkeyに対応するvalの数を合計する、といった内容なら、その中身を精査する処理はいらない。
+			 */
+			int sum = 0;
+			while (values.hasNext()) sum += values.next().get();
+			output.collect(key, new IntWritable(sum));
+		}
+	}
+	
+	/**LongWritable, IntWritable形式のK,Vペアに対する集計Reducer。<br>
+	 * KeyをLongで持つ時刻情報やUserID情報のMapに対して使える。
+	 * @author Matsuzawa
+	 *
+	 */
+	public static class LongIntReduce extends MapReduceBase implements Reducer<LongWritable, IntWritable, LongWritable, IntWritable> {
+		
+		@Override
+		public void reduce(LongWritable key, Iterator<IntWritable> values,
+				OutputCollector<LongWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			int sum = 0;
+			while (values.hasNext()) sum += values.next().get();
+			output.collect(key, new IntWritable(sum));
+		}
+		
+	}
+	
+	/**IntWritable, IntWritable形式のK,Vペアに対する集計Reducer。<br>
+	 * KeyをIntで持つ頻度・回数情報を扱うMapに対して使える。<br>
+	 * @author Matsuzawa
+	 *
+	 */
+	public static class IntIntReduce extends MapReduceBase implements Reducer<IntWritable, IntWritable, IntWritable, IntWritable> {
+		
+		@Override
+		public void reduce(IntWritable key, Iterator<IntWritable> values,
+				OutputCollector<IntWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			int sum = 0;
+			while (values.hasNext()) sum += values.next().get();
+			output.collect(key, new IntWritable(sum));
 		}
 		
 	}

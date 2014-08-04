@@ -118,6 +118,42 @@ public class TweetCount {
 				//do nothing
 			}
 		}
+	}
+	
+	/**Count arbitorary Retweets.
+	 * @author Yu
+	 *
+	 */
+	public static class RetweetMap extends MapReduceBase implements Mapper<LongWritable, Text, LongWritable, IntWritable> {
+		private static IntWritable one = new IntWritable(1);
+		
+		@Override
+		public void map(LongWritable key, Text value, OutputCollector<LongWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			try {
+				Status tweet = TwitterObjectFactory.createStatus(value.toString());
+				Status retweet = tweet.getRetweetedStatus();
+				if (retweet != null) {
+					output.collect(new LongWritable(retweet.getId()), one);
+				}
+			} catch(TwitterException e) {
+				//do nothing
+			} catch(Exception e) {
+				//do nothing
+			}
+		}
+	}
+	
+	public static class RetweetFreqMap extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, IntWritable> {
+		private static final IntWritable one = new IntWritable(1);
+		
+		@Override
+		public void map(LongWritable key, Text value, OutputCollector<IntWritable, IntWritable> output, Reporter reporter)
+				throws IOException {
+			String[] splitText = value.toString().split("\\s");
+			int retweetCount = Integer.parseInt(splitText[1]);
+			output.collect(new IntWritable(retweetCount), one);
+		}
 		
 	}
 	

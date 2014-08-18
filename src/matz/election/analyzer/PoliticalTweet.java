@@ -106,19 +106,31 @@ public class PoliticalTweet extends URLTweet {
 	}
 	
 	/**政党名ごとに、期間中にどれだけツイートされたかカウントするMap。実際の支持率や、議席割合との比較に用いる。<br>
-	 * 
+	 * PoloticalTweetMapで絞り込んだデータを入力に使えばいい。Key:TweetID,Value:RawJSON.<br>
+	 * TextIntReduceが使える。
 	 * @author Yu
 	 *
 	 */
 	public static class PartyBuzzMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
-
+		private String[] partyNames = {"自民党","民主党","日本維新の会","公明党","みんなの党","生活の党","共産党","社民党","新党改革","みどりの風"};
+		
 		@Override
 		public void map(LongWritable key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
-			// TODO 自動生成されたメソッド・スタブ
-			
+			Status tweet = null;
+			try {
+				tweet = TwitterObjectFactory.createStatus(value.toString());
+				for (String party : partyNames) {
+					if (tweet.getText().contains(party)) {
+						output.collect(new Text(party), new IntWritable(1));
+					}
+				}
+			} catch (TwitterException e) {
+				e.printStackTrace();
+			}
 		}
-		
 	}
+	
+	public static class TextIntReduce extends TweetCount.TextIntReduce {};
 
 }

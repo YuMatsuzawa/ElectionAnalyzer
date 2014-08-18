@@ -71,6 +71,7 @@ public class AnalyzerMain {
 		{"BuzzExtract","URLTweet","BuzzExtractMap","BuzzExtractReduce"," <input_textFile_Path> <outputPath> [<buzzThreshold>]",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM},
 		{"BuzzURLExpand","URLTweet","BuzzURLExpandMap","TextIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
 		{"PoliticalTweet","PoliticalTweet","PoliticalTweetMap","PoliticalTweetReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_LONG,PROP_TEXT,BALANCED_REDUCE_NUM},
+		{"PartyBuzz","PoliticalTweet","PartyBuzzMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。

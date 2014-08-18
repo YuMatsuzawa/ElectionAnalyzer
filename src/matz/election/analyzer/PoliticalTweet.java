@@ -10,6 +10,7 @@ import java.util.List;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
@@ -102,6 +103,22 @@ public class PoliticalTweet extends URLTweet {
 				output.collect(key, values.next());
 			}
 		}
+	}
+	
+	/**政党名ごとに、期間中にどれだけツイートされたかカウントするMap。実際の支持率や、議席割合との比較に用いる。<br>
+	 * 
+	 * @author Yu
+	 *
+	 */
+	public static class PartyBuzzMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
+
+		@Override
+		public void map(LongWritable key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter)
+				throws IOException {
+			// TODO 自動生成されたメソッド・スタブ
+			
+		}
+		
 	}
 
 }

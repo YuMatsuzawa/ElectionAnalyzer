@@ -18,6 +18,7 @@ import org.apache.hadoop.mapred.*;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 import twitter4j.TwitterObjectFactory;
+import twitter4j.URLEntity;
 
 /**政治的な内容のツイートを抽出するためのクラス。<br>
  * 元データは政治的な内容のツイートを行ったアカウントについて、その時期に行ったその他のツイートも集める、という方式で収集した。<br>
@@ -130,6 +131,67 @@ public class PoliticalTweet extends URLTweet {
 			}
 		}
 	}
+	
+	/**政策に関する話題＝Topicに関連するツイートで、URLを含むものをカウントする。<br>
+	 * インプットはPoliticalTweetMapで抽出された政治関連ツイートのSeqファイル。<br>
+	 * インプットのKeyにはLongのユーザID、ValueにはTextでツイートStatusが格納されている。<br>
+	 * Topicはコマンドラインから取得するようにするので、インターフェイスJobConfigurableを実装する。<br>
+	 * 最終的なアウトプットは、URLをTextKey、言及数をIntValueとして持つTextとする。TextIntReduceを使う。<br>
+	 * さらにそのアウトプットをインプットとして、URLをKey，そのリンク先ページのタイトルをValueとするようなマップを用意すると、簡単なチェックに使えるだろう。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class TopicURLCountMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable>, JobConfigurable {
+		//引数など、設定情報をコマンドラインやmain内から得たい場合は、JobCinfigurableをimplementしてconfigureを実装する。
+		private List<String> topicQueries = new ArrayList<String>();
+		private Text urlText = new Text();
+		private IntWritable one = new IntWritable(1);
+		
+		public void configure(JobConf job) {
+			String extraArg = null;
+			int argIndex = 3;
+			while(true) {
+				extraArg = job.get(String.format("arg%d", argIndex));
+				if (extraArg != null) {
+					topicQueries.add(extraArg);
+					argIndex++;
+				} else {
+					break;
+				}
+			}
+		}
+		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<Text, IntWritable> output, Reporter reporter)
+				throws IOException {
+			Status tweet = null;
+			try {
+				tweet = TwitterObjectFactory.createStatus(value.toString());
+				boolean isRelated = false;
+				for (String query : topicQueries){ //クエリに合致する語を含む（＝関連ツイートである）かどうかを調べる。
+					if (tweet.getText().contains(query)) {
+						isRelated = true;
+						break;
+					}
+				}
+				
+				if (isRelated) { //関連しているなら添付URLを数える。
+					for (URLEntity url : tweet.getURLEntities()) { //もしURL添付がなければ配列は空である。よってループは1回も回らずに抜ける。
+						String urlStr = url.getExpandedURL(); //展開済みURLを使う。
+						if (urlStr == null) urlStr = url.getURL(); //展開済みが使えなければURLを使うが、ここには外部の短縮サービスで短縮されたURLが入っていることもある。
+						urlText.set(urlStr);
+						output.collect(urlText, one);
+					}
+				}
+			} catch (TwitterException e) {
+				e.printStackTrace();
+			}
+			
+		}
+	}
+	
+	
 	
 	public static class TextIntReduce extends TweetCount.TextIntReduce {};
 

@@ -14,9 +14,8 @@ import java.net.URL;
  */
 public class URLExpander {
 	 
-    /**THIS WON'T WORK.<br>
-     * 通常のHTTP転送の枠組みで到達先URLを取得しようとするURL展開メソッドだが、<br>
-     * URL短縮サービスは基本的にこのような方式ではURLを教えてくれないようだ。
+    /**<s>THIS WON'T WORK.</s>THIS ACTUALLY WORKS.<br>
+     * HTTPコネクションを開く際に、リダイレクトに従うという設定をoffにしておくことで、リダイレクト先のLocationをフィールドから取得できる。
      * @param url
      * @return
      */

@@ -3,6 +3,8 @@ package matz.election.analyzer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -14,6 +16,9 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import twitter4j.Status;
 import twitter4j.TwitterException;
@@ -136,7 +141,7 @@ public class PoliticalTweet extends URLTweet {
 	 * インプットはPoliticalTweetMapで抽出された政治関連ツイートのSeqファイル。<br>
 	 * インプットのKeyにはLongのユーザID、ValueにはTextでツイートStatusが格納されている。<br>
 	 * Topicはコマンドラインから取得するようにするので、インターフェイスJobConfigurableを実装する。<br>
-	 * 最終的なアウトプットは、URLをTextKey、言及数をIntValueとして持つTextとする。TextIntReduceを使う。<br>
+	 * 最終的なアウトプットは、URLをTextKey、言及数をIntValueとして持つ<s>Text</s>SeqFileとする。SeqFileのほうが扱いが良いので変更。TextIntReduceを使う。<br>
 	 * さらにそのアウトプットをインプットとして、URLをKey，そのリンク先ページのタイトルをValueとするようなマップを用意すると、簡単なチェックに使えるだろう。
 	 * @author YuMatsuzawa
 	 *
@@ -191,6 +196,57 @@ public class PoliticalTweet extends URLTweet {
 		}
 	}
 	
+	/**TopicURLCountMapで取得した特定話題のURL群について、適当な閾値よりも多く言及されているURLにコネクションを開き、 記事のタイトルを取得してくるMap。<br>
+	 * <s>TextFile</s>SeqFileをインプットとし、<s>1行は空白区切りで、URL-CountNumペアが格納されている。</s>Text-IntWritableペアが格納されている<br>
+	 * コマンドラインから閾値を取得する。デフォルトは10。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class TopicURLTitleMap extends MapReduceBase implements Mapper<Text, IntWritable, Text, IntWritable>, JobConfigurable {
+		private int threshold = 10;
+		private IntWritable one = new IntWritable(1);
+		private Text title = new Text();
+
+		public void configure(JobConf job) {
+			String extraArg = job.get("arg3");
+			if (extraArg != null) {
+				try {
+					threshold = Integer.parseInt(extraArg);
+				} catch (NumberFormatException e) {
+					//do nothing. default value will be kept.
+				}
+			}
+		}
+		
+		@Override
+		public void map(Text key, IntWritable value,
+				OutputCollector<Text, IntWritable> output, Reporter reporter)
+				throws IOException {
+//			String[] pair = value.toString().split("//s");
+//			int keyIdx = 0, valIdx = 1;
+			URL link = null;
+//			if (Integer.parseInt(pair[valIdx]) >= threshold) {
+			if (Integer.parseInt(value.toString()) >= threshold) {
+				link = new URL(key.toString());
+				HttpURLConnection conn = null;
+				try {
+					conn = (HttpURLConnection) link.openConnection();
+		    		conn.setConnectTimeout(10*1000);
+		    		conn.setInstanceFollowRedirects(true); // get actual contents
+		    		conn.connect();
+		    		
+		    		Document doc = Jsoup.parse(conn.getContent().toString());
+		    		Element titleElement = doc.getElementsByTag("title").first();
+		    		title.set(titleElement.text());
+		    		
+		    		output.collect(title, one);
+		    		
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 	
 	
 	public static class TextIntReduce extends TweetCount.TextIntReduce {};

@@ -72,7 +72,8 @@ public class AnalyzerMain {
 		{"BuzzURLExpand","URLTweet","BuzzURLExpandMap","TextIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
 		{"PoliticalTweet","PoliticalTweet","PoliticalTweetMap","PoliticalTweetReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_LONG,PROP_TEXT,BALANCED_REDUCE_NUM},
 		{"PartyBuzz","PoliticalTweet","PartyBuzzMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
-		{"TopicURLCount","PoliticalTweet","TopicURLCountMap","TextIntReduce"," <input_seqFile_Path> <outputPath> <topic query>",PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
+		{"TopicURLCount","PoliticalTweet","TopicURLCountMap","TextIntReduce"," <input_seqFile_Path> <outputPath> <topic query>",PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
+		{"URLExpand","URLTweet","URLExpandMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
 		{"TopicURLTitle","PoliticalTweet","TopicURLTitleMap","TextIntReduce"," <input_textFile_Path> <outputPath> [<threshold>]",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
 	};
 	

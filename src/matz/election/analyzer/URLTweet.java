@@ -1,6 +1,8 @@
 package matz.election.analyzer;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -190,6 +192,67 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 				}
 			}
 //			output.collect(new Text("soto"),new IntWritable(count));
+		}
+	}
+	
+	/**Seq形式のText-Intファイルで、KeyにURLが入っているものに対し、そのURLの実際のリンク先（展開URL）を取得するためのMap。<br>
+	 * このMapでは、元KeyのURLを展開したものを新Keyとしたペア（Valueは元の値のまま）を生成し、それをReducerに投入することで短縮URLによって別個のものとされていた同一のリンクの頻度を合計する。<br>
+	 * 最終的なアウトプットはインプットと同形式のText-Intファイルとなる。Seq形式で出力するかText形式で出力するかはその後の用途によるので、AnalyzerMainのテーブルで指定する。<br>
+	 * URL展開のための再帰的なリダイレクト参照のスニペットはURLExpanderのmain関数内にある。リダイレクトループを抜けるための処理を設けること。<br>
+	 * また、URL展開のAPIが失効しているような場合には、初期ホップの時点でHTTPアクセスに対する返り値がない場合がある。このようなURLを除去するか、そのままにするかも用途による。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class URLExpandMap extends MapReduceBase implements Mapper<Text, IntWritable, Text, IntWritable> {
+		private static int MAX_HOP = 10; 
+		
+		@Override
+		public void map(Text key, IntWritable value,
+				OutputCollector<Text, IntWritable> output, Reporter reporter)
+				throws IOException {
+			String tmp = key.toString(), destURL = null;
+			int hopNum = 0;
+			while(tmp!=null && hopNum < MAX_HOP) { //loop until find some reachable destination. but be carful of redirection loop.
+				hopNum++;
+				destURL = tmp;
+				tmp = connectWithoutRedirect(tmp);
+			}
+			
+			//At this point, destURL always have the same String as initial tmp, or acquired URL String.
+			//Take note: The acquired ones might indicate error page or something meaningless.
+			if (hopNum < MAX_HOP) {
+				//if destURL was the same as the initial key or reached some URL within MAX_HOP window, replace the key with it.
+				output.collect(new Text(destURL), value);
+			} else {
+				//if the URL deemed as causation of redirection loop, simply keep the initial URL.
+				output.collect(key, value);
+			}
+		}
+		private static String connectWithoutRedirect(String args) {
+			URL inputUrl = null;
+			HttpURLConnection conn = null;
+			String ret = null;
+			try {
+				inputUrl = new URL(args);
+				conn = (HttpURLConnection) inputUrl.openConnection();
+				conn.setInstanceFollowRedirects(false);
+				conn.setConnectTimeout(10*1000);
+				
+//				for (Entry<String, List<String>> headers : conn.getHeaderFields().entrySet()) {
+//					System.out.print(headers.getKey() + " :");
+//					for (String value : headers.getValue()) {
+//						System.out.println("\t"+value);
+//					}
+//				}
+//				System.out.println();
+				
+				ret = (conn.getHeaderField("Location") != null)? conn.getHeaderField("Location") : null;
+				
+				return ret;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return args;
 		}
 	}
 	

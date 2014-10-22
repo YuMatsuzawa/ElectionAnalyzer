@@ -142,7 +142,7 @@ public class PoliticalTweet extends URLTweet {
 	 * インプットのKeyにはLongのユーザID、ValueにはTextでツイートStatusが格納されている。<br>
 	 * Topicはコマンドラインから取得するようにするので、インターフェイスJobConfigurableを実装する。<br>
 	 * 最終的なアウトプットは、URLをTextKey、言及数をIntValueとして持つ<s>Text</s>SeqFileとする。SeqFileのほうが扱いが良いので変更。TextIntReduceを使う。<br>
-	 * さらにそのアウトプットをインプットとして、URLをKey，そのリンク先ページのタイトルをValueとするようなマップを用意すると、簡単なチェックに使えるだろう。
+	 * さらにそのアウトプットをインプットとして、URLをKey，そのリンク先ページのタイトルをValueとするようなマップを用意すると、簡単なチェックに使えるだろう。<br>
 	 * @author YuMatsuzawa
 	 *
 	 */
@@ -196,9 +196,10 @@ public class PoliticalTweet extends URLTweet {
 		}
 	}
 	
-	/**TopicURLCountMapで取得した特定話題のURL群について、適当な閾値よりも多く言及されているURLにコネクションを開き、 記事のタイトルを取得してくるMap。<br>
+	/**FIXME 未完成。<br>
+	 * TopicURLCountMapで取得した特定話題のURL群について、適当な閾値よりも多く言及されているURLにコネクションを開き、 記事のタイトルを取得してくるMap。<br>
 	 * <s>TextFile</s>SeqFileをインプットとし、<s>1行は空白区切りで、URL-CountNumペアが格納されている。</s>Text-IntWritableペアが格納されている<br>
-	 * コマンドラインから閾値を取得する。デフォルトは10。
+	 * コマンドラインから閾値を取得する。デフォルトは10。HTMLパースエンジン・Jsoupを使ってtitleタグの中身を取得する。<br>
 	 * @author YuMatsuzawa
 	 *
 	 */

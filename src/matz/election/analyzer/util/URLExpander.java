@@ -21,7 +21,7 @@ public class URLExpander {
 	public static void main(String args[]) {
 		//適当なURLに対し、コネクションを開いて返り値をチェックするためのmain関数。引数にURLを与えよ。
 		//バッチ処理用ではなく、少数の例に対する簡易チェック用である。自動でリダイレクトせず、逐一Locationを確認する。
-		String tmp = args[0], destURL = null;
+		String tmp = trimURL(args[0]), destURL = null;
 		int hopNum = 0;
 		while(tmp!=null && hopNum < MAX_HOP) { //loop until find some reachable destination. but be carful of redirection loop.
 			hopNum++;
@@ -35,34 +35,91 @@ public class URLExpander {
 		}
 	}
 
+	public static String connectWithoutRedirect(String args) {
+		return connectWithoutRedirect(args, false);
+	}
+	
+	public static String trimURL(String urlStr) {
+		return trimURL(urlStr, false);
+	}
+	
+	private static String trimURL(String urlStr, boolean debug) {
+		try {
+			URL inputUrl = new URL(urlStr);
+
+			String anchor = inputUrl.getRef();
+			String query = inputUrl.getQuery();
+			String body = inputUrl.toString();
+			if (anchor != null) body = body.replace(anchor, "").replace("#", "");	// remove any anchor
+
+			boolean hasNumQuery = false;
+			if (query != null) {
+				String[] pairs = query.split("&");
+				for(String pair : pairs) {
+					String[] vals = pair.split("=");
+					if (vals.length > 1) {
+						if (vals[1].matches("\\d+")) {
+							hasNumQuery = true;
+						}
+					}
+				}
+			}
+			if (!hasNumQuery) body = body.replaceAll("\\?*"+query, ""); // remove queries not containing numeric queries (assumed perma-link calls)
+
+			if (debug) {
+				System.out.println("anchor\t"+anchor);
+				System.out.println("query\t"+query);
+				System.out.println("simple\t"+body);
+			}
+
+			return body;
+		} catch (Exception e) {
+			System.err.println("Error on trimming URL:\t"+urlStr);
+			e.printStackTrace();
+			return urlStr;
+		}
+	}
+	
 	/**
 	 * @param args
 	 */
-	private static String connectWithoutRedirect(String args) {
+	private static String connectWithoutRedirect(String args, boolean debug) {
 		URL inputUrl = null;
 		HttpURLConnection conn = null;
 		String ret = null;
 		try {
 			inputUrl = new URL(args);
+			
 			conn = (HttpURLConnection) inputUrl.openConnection();
 			conn.setInstanceFollowRedirects(false);
 			conn.setConnectTimeout(10*1000);
-			
-			
-			for (Entry<String, List<String>> headers : conn.getHeaderFields().entrySet()) {
-				System.out.print(headers.getKey() + " :");
-				for (String value : headers.getValue()) {
-					System.out.println("\t"+value);
+
+			if (debug) {
+				for (Entry<String, List<String>> headers : conn.getHeaderFields().entrySet()) {
+					System.out.print(headers.getKey() + " :");
+					for (String value : headers.getValue()) {
+						System.out.println("\t"+value);
+					}
 				}
+				System.out.println();
 			}
-			System.out.println();
 			
 			ret = (conn.getHeaderField("Location") != null)? conn.getHeaderField("Location") : null;
-			
-			return ret;
+			try {
+				new URL(ret);
+				return ret;
+			} catch (MalformedURLException e) {
+//				inputUrl.getProtocol()+"://"+inputUrl.getHost()+
+				System.err.println("Malformed URL returned from:\t"+args);
+				System.err.println("Malformed URL:\t"+ret);
+			}
 		} catch (Exception e) {
-			System.err.println("Pass proper URL.");
-			System.exit(1);
+			System.err.println("Error on connecting URL:\t"+args);
+			e.printStackTrace();
+			if (debug) {
+				System.err.println("Pass proper URL.");
+				System.exit(1);
+			}
 		}
 		return args;
 	}

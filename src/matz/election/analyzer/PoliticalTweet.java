@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import matz.election.analyzer.util.URLExpander;
+
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -194,6 +196,92 @@ public class PoliticalTweet extends URLTweet {
 			}
 			
 		}
+	}
+	
+	/**話題関連URLと、その言及ユーザとのペア（リンク）を出力する。その後の集計の基礎とすべきデータベースとするため、Reducerは何もしなくていい。<br>
+	 * つまり、URLをKey，言及ユーザをValueとするMapperから送られてくるペアをそのまま再現して送り出すReducerでよい。<br>
+	 * ここでいきなりURLの展開と、クエリパラメータの除去を行う。以後の分析はこのMapで作られたデータを参照して行えば良い（元のTweetログに立ち返る必要がない）.<br>
+	 * 必要ならこのMapReduceの出力を複製してMetastoreテーブルとしてインポートしておけばHive/Impala分析もできる。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class TopicURLUserMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, LongWritable>, JobConfigurable {
+		//引数など、設定情報をコマンドラインやmain内から得たい場合は、JobCinfigurableをimplementしてconfigureを実装する。
+		private List<String> topicQueries = new ArrayList<String>();
+		private Text urlText = new Text();
+		private int MAX_HOP = 10;
+		
+		public void configure(JobConf job) {
+			String extraArg = null;
+			int argIndex = 3;
+			while(true) {
+				extraArg = job.get(String.format("arg%d", argIndex));
+				if (extraArg != null) {
+					topicQueries.add(extraArg);
+					argIndex++;
+				} else {
+					break;
+				}
+			}
+		}
+		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<Text, LongWritable> output, Reporter reporter)
+				throws IOException {
+			Status tweet = null;
+			try {
+				tweet = TwitterObjectFactory.createStatus(value.toString());
+				boolean isRelated = false;
+				for (String query : topicQueries){ //クエリに合致する語を含む（＝関連ツイートである）かどうかを調べる。
+					if (tweet.getText().contains(query)) {
+						isRelated = true;
+						break;
+					}
+				}
+				
+				if (isRelated) { //関連しているなら添付URLを数える。
+					for (URLEntity url : tweet.getURLEntities()) { //もしURL添付がなければ配列は空である。よってループは1回も回らずに抜ける。
+						String urlStr = url.getExpandedURL(); //展開済みURLを使う。
+						if (urlStr == null) urlStr = url.getURL(); //展開済みが使えなければURLを使うが、ここには外部の短縮サービスで短縮されたURLが入っていることもある。
+						
+						//ここで末尾のアンカー/クエリで不要なものを除去。
+						String tmp = URLExpander.trimURL(urlStr), destStr = null;
+						
+						//open connection to fetch Location, while considering redirect loop
+						int hopNum = 0;
+						while(tmp!=null && hopNum < MAX_HOP) {
+							hopNum++;
+							destStr = tmp;
+							tmp = URLExpander.connectWithoutRedirect(tmp);
+						}
+						
+						if (hopNum >= MAX_HOP) { // assumed redirect loop. keep initial URL
+							destStr = urlStr;
+						}
+						
+						urlText.set(destStr);
+						output.collect(urlText, key); // collect URL-UserID pair
+					}
+				}
+			} catch (TwitterException e) {
+				e.printStackTrace();
+			}
+			
+		}
+	}
+	
+	public static class TopicURLUserReduce extends MapReduceBase implements Reducer<Text, LongWritable, Text, LongWritable> {
+
+		@Override
+		public void reduce(Text key, Iterator<LongWritable> values,
+				OutputCollector<Text, LongWritable> output, Reporter reporter)
+				throws IOException {
+			while(values.hasNext()) {
+				output.collect(key, values.next()); // doing nothing, just passing source pair
+			}
+		}
+		
 	}
 	
 	/**FIXME 未完成。<br>

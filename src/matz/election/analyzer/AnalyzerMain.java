@@ -75,6 +75,7 @@ public class AnalyzerMain {
 		{"TopicURLCount","PoliticalTweet","TopicURLCountMap","TextIntReduce"," <input_seqFile_Path> <outputPath> <topic query>",PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
 		{"URLExpand","URLTweet","URLExpandMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
 		{"TopicURLTitle","PoliticalTweet","TopicURLTitleMap","TextIntReduce"," <input_textFile_Path> <outputPath> [<threshold>]",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
+		{"SeqToText","URLTweet","SeqToTextMap","TextIntReduce"," <input_textFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。

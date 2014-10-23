@@ -256,6 +256,22 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 		}
 	}
 	
+	/**TopicURLCountやURLExpandで作ったText-Int形式のSeqファイルをチェックしやすいTextファイルに変換するMap。<br>
+	 * 単なるパイプ的Mapで、出力形式だけを変えるものなので、中身は実質無い。TextIntReduceを使う。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class SeqToTextMap extends MapReduceBase implements Mapper<Text, IntWritable, Text, IntWritable> {
+
+		@Override
+		public void map(Text key, IntWritable value,
+				OutputCollector<Text, IntWritable> output, Reporter reporter)
+				throws IOException {
+			output.collect(key, value);
+		}
+		
+	}
+	
 	public static class TextIntReduce extends TweetCount.TextIntReduce {};
 	public static class LongIntReduce extends TweetCount.LongIntReduce {};
 	public static class IntIntReduce extends TweetCount.IntIntReduce {};

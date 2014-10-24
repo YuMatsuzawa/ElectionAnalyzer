@@ -106,8 +106,8 @@ public class URLExpander {
 			
 			ret = (conn.getHeaderField("Location") != null)? conn.getHeaderField("Location") : null;
 			try {
-				new URL(ret);
-				return ret;
+				URL outputUrl = new URL(ret);
+				return outputUrl.toString();
 			} catch (MalformedURLException e) {
 //				inputUrl.getProtocol()+"://"+inputUrl.getHost()+
 				System.err.println("Malformed URL returned from:\t"+args);

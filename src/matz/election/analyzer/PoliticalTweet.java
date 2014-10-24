@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import matz.election.analyzer.util.URLExpander;
-
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -200,7 +198,8 @@ public class PoliticalTweet extends URLTweet {
 	
 	/**話題関連URLと、その言及ユーザとのペア（リンク）を出力する。その後の集計の基礎とすべきデータベースとするため、Reducerは何もしなくていい。<br>
 	 * つまり、URLをKey，言及ユーザをValueとするMapperから送られてくるペアをそのまま再現して送り出すReducerでよい。<br>
-	 * ここでいきなりURLの展開と、クエリパラメータの除去を行う。以後の分析はこのMapで作られたデータを参照して行えば良い（元のTweetログに立ち返る必要がない）.<br>
+	 * <s>ここでいきなりURLの展開と、クエリパラメータの除去を行う。以後の分析はこのMapで作られたデータを参照して行えば良い（元のTweetログに立ち返る必要がない）.</s><br>
+	 * なんかうまくいかないので展開はやめる。パラメータ除去も、あとで別のMapを設けてそこでやる。まずはもとURLとUserIDとのリンクを作ってしまう。<br>
 	 * 必要ならこのMapReduceの出力を複製してMetastoreテーブルとしてインポートしておけばHive/Impala分析もできる。
 	 * @author YuMatsuzawa
 	 *
@@ -209,7 +208,7 @@ public class PoliticalTweet extends URLTweet {
 		//引数など、設定情報をコマンドラインやmain内から得たい場合は、JobCinfigurableをimplementしてconfigureを実装する。
 		private List<String> topicQueries = new ArrayList<String>();
 		private Text urlText = new Text();
-		private int MAX_HOP = 10;
+//		private int MAX_HOP = 10;
 		
 		public void configure(JobConf job) {
 			String extraArg = null;
@@ -246,21 +245,22 @@ public class PoliticalTweet extends URLTweet {
 						if (urlStr == null) urlStr = url.getURL(); //展開済みが使えなければURLを使うが、ここには外部の短縮サービスで短縮されたURLが入っていることもある。
 						
 						//ここで末尾のアンカー/クエリで不要なものを除去。
-						String tmp = URLExpander.trimURL(urlStr), destStr = null;
+//						String tmp = URLExpander.trimURL(urlStr), destStr = null;
 						
 						//open connection to fetch Location, while considering redirect loop
-						int hopNum = 0;
-						while(tmp!=null && hopNum < MAX_HOP) {
-							hopNum++;
-							destStr = tmp;
-							tmp = URLExpander.connectWithoutRedirect(tmp);
-						}
+//						int hopNum = 0;
+//						while(tmp!=null && hopNum < MAX_HOP) {
+//							hopNum++;
+//							destStr = tmp;
+//							tmp = URLExpander.connectWithoutRedirect(tmp);
+//						}
+//						
+//						if (hopNum >= MAX_HOP) { // assumed redirect loop. keep initial URL
+//							destStr = urlStr;
+//						}
 						
-						if (hopNum >= MAX_HOP) { // assumed redirect loop. keep initial URL
-							destStr = urlStr;
-						}
-						
-						urlText.set(destStr);
+//						urlText.set(destStr);
+						urlText.set(urlStr);
 						output.collect(urlText, key); // collect URL-UserID pair
 					}
 				}

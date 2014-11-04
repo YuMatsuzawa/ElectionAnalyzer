@@ -284,6 +284,89 @@ public class PoliticalTweet extends URLTweet {
 		
 	}
 	
+	public static class FilterURLMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
+		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			String[] pair = value.toString().split(",");
+			output.collect(new Text(pair[0]), new Text(pair[1]));
+		}
+		
+	}
+	
+	public static class FilterURLReduce extends MapReduceBase implements Reducer<Text,Text,Text,Text> {
+//		private int threshold = 1;
+
+//		public void configure(JobConf job) {
+//			String extraArg = job.get("arg3");
+//			if (extraArg != null) {
+//				try {
+//					threshold = Integer.parseInt(extraArg);
+//				} catch (NumberFormatException e) {
+//					//do nothing. default value will be kept.
+//				}
+//			}
+//		}
+		
+		@Override
+		public void reduce(Text key, Iterator<Text> values,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+//			ArrayList<String> valueList = new ArrayList<String>();
+//			while(values.hasNext()) valueList.add(values.next().toString());
+			if (!key.toString().startsWith("\"")) {
+				String valStr = "";
+				while(values.hasNext()) {
+					if (!valStr.isEmpty()) valStr += ",";
+					valStr += values.next().toString();
+				}
+				Text valText = new Text(valStr);
+				output.collect(key, valText);
+			}
+			
+		}
+	}
+	
+	public static class ThresholdURLMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text>, JobConfigurable {
+		private int threshold = 1;
+
+		public void configure(JobConf job) {
+			String extraArg = job.get("arg3");
+			if (extraArg != null) {
+				try {
+					threshold = Integer.parseInt(extraArg);
+				} catch (NumberFormatException e) {
+					//do nothing. default value will be kept.
+				}
+			}
+		}
+		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			String[] pair = value.toString().split("\\s");
+			String URL = pair[0];
+			String[] users = pair[1].split(",");
+			if (users.length >= threshold) {
+				output.collect(new Text(URL), new Text(pair[1]));
+			}
+		}
+	}
+	
+	public static class ThresholdURLReduce extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
+
+		@Override
+		public void reduce(Text key, Iterator<Text> values,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			while(values.hasNext()) output.collect(key, values.next());
+		}
+		
+	}
+	
 	/**FIXME 未完成。<br>
 	 * TopicURLCountMapで取得した特定話題のURL群について、適当な閾値よりも多く言及されているURLにコネクションを開き、 記事のタイトルを取得してくるMap。<br>
 	 * <s>TextFile</s>SeqFileをインプットとし、<s>1行は空白区切りで、URL-CountNumペアが格納されている。</s>Text-IntWritableペアが格納されている<br>

@@ -5,9 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.Map.Entry;
 
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -284,6 +283,10 @@ public class PoliticalTweet extends URLTweet {
 		
 	}
 	
+	/**URLのKeyに対し、言及ユーザのValueを集計するMapR。Mapperは単にテキストからKey-Valを読む。
+	 * @author YuMatsuzawa
+	 *
+	 */
 	public static class FilterURLMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
 		
 		@Override
@@ -296,6 +299,10 @@ public class PoliticalTweet extends URLTweet {
 		
 	}
 	
+	/**Reducer内で、Valリストを結合し、CSV化する。出力はKeyにURL，Valueに対応する言及ユーザのCSVが入る。
+	 * @author YuMatsuzawa
+	 *
+	 */
 	public static class FilterURLReduce extends MapReduceBase implements Reducer<Text,Text,Text,Text> {
 //		private int threshold = 1;
 
@@ -329,6 +336,11 @@ public class PoliticalTweet extends URLTweet {
 		}
 	}
 	
+	/**FilterURLで作ったURLごとの言及ユーザリストに対し、閾値を設けて定数以下の言及回数のURLを除外する。<br>
+	 * 出力はFilterURLと同形式、URLとそれに対応するユーザリスト。
+	 * @author YuMatsuzawa
+	 *
+	 */
 	public static class ThresholdURLMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text>, JobConfigurable {
 		private int threshold = 1;
 
@@ -364,7 +376,74 @@ public class PoliticalTweet extends URLTweet {
 				throws IOException {
 			while(values.hasNext()) output.collect(key, values.next());
 		}
+	}
+	
+	/**FilterURLまたはThresholdURLで作成したURL-ユーザリストのデータから、任意の2URLについてレコードを接合したペアを出力する。<br>
+	 * 従ってこのMapRは、入力データが100件のレコードを持っていれば、出力は100x99=9900件のレコードを持つ。<br>
+	 * 入力に対し2乗オーダーで計算時間及びメモリ使用量を要するので、重いJOIN処理である。<br>
+	 * また、全組み合わせを網羅する必要上、combineが不可能で、単一のReducer内で処理するしかないため、MapR向きの処理ではない。<br>
+	 * Mapper内では、統一されたInt値のKeyに対し、入力レコードをValueとして添付してemitする。これによって単一のReducerに全てのレコードを集結させる。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class PairedURLMap extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, Text> {
+		private IntWritable one = new IntWritable(1);
 		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<IntWritable, Text> output, Reporter reporter)
+				throws IOException {
+			output.collect(one, value);
+		}
+	}
+	
+	/**Reducer内で入力レコードのJOIN処理を行う。KeyはIntの1に統一してあるため、入力の全レコードが単一のReducerに集結する。<br>
+	 * 入力はURL\tUserid,userid,userid,...という形式だが、この\tはReducerからText形式のデータに出力される際に自動で付けられたものである。<br>
+	 * このタブを保持してしまった場合、出力のテキストを読む際に問題が起きるような気がするので、これをカンマにしておく。即ち出力は以下の形式である。<br>
+	 * <code>URL1,userid,userid,userid,...\tURL2,userid,userid,userid,...</code>
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class PairedURLReduce extends MapReduceBase implements Reducer<IntWritable, Text, Text, Text> {
+
+		@Override
+		public void reduce(IntWritable key, Iterator<Text> values,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			LinkedHashMap<String, String[]> pairs = new LinkedHashMap<String, String[]>();
+			while(values.hasNext()) {
+				String[] pair = values.next().toString().split("\t");
+				String[] users = pair[1].split(",");
+				pairs.put(pair[0], users);
+			}
+			
+			// currently we need combination of records, that means we consider a reversed pair as the same to the original pair.
+			// to eliminate unneeded pairs, we drop 'already processed' record from iterating Map.
+			int i=0;
+			for (Entry<String, String[]> pair : pairs.entrySet()) {
+//				Entry<String, String[]> keyPair = pair;
+				String keyStr = pair.getKey()+","+join(pair.getValue());
+//				pairs.remove(pair.getKey()); 													//removing picked entry from Map.
+				int j=0,cur=i;
+				for (Entry<String, String[]> valPair : pairs.entrySet()) {
+					if (j > cur) {
+						String valStr = valPair.getKey()+","+join(valPair.getValue());
+						output.collect(new Text(keyStr), new Text(valStr));
+					}
+					j++;
+				}
+				i++;
+			}
+		}
+
+		private static String join(String[] strings) {
+			String ret = "";
+			for(String str : strings) {
+				if (!ret.isEmpty()) ret += ",";
+				ret += str;
+			}
+			return ret;
+		}
 	}
 	
 	/**FIXME 未完成。<br>

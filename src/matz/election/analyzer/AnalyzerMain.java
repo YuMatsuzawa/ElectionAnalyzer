@@ -51,7 +51,8 @@ public class AnalyzerMain {
 	
 	protected final static int PROP_INDEX_JOB_NAME = 0, PROP_INDEX_JOB_CLASS = 1, PROP_INDEX_MAP_CLASS = 2,
 			PROP_INDEX_REDUCE_CLASS = 3, PROP_INDEX_USAGE = 4, PROP_INDEX_INPUT_FORMAT = 5, PROP_INDEX_OUTPUT_FORMAT = 6,
-			PROP_INDEX_OUTPUT_KEY_CLASS = 7, PROP_INDEX_OUTPUT_VALUE_CLASS = 8, PROP_INDEX_REDUCE_NUM = 9;
+			PROP_INDEX_OUTPUT_KEY_CLASS = 7, PROP_INDEX_OUTPUT_VALUE_CLASS = 8, PROP_INDEX_REDUCE_NUM = 9,
+			PROP_INDEX_MAPPER_KEY_CLASS = 10, PROP_INDEX_MAPPER_VALUE_CLASS = 11;
 	
 	
 	/**使用可能なジョブについての情報を保持する2次元配列。<br>
@@ -80,6 +81,7 @@ public class AnalyzerMain {
 		{"SeqToText","URLTweet","SeqToTextMap","TextIntReduce"," <input_textFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
 		{"FilterURL","PoliticalTweet","FilterURLMap","FilterURLReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM},
 		{"ThresholdURL","PoliticalTweet","ThresholdURLMap","ThresholdURLReduce"," <input_textFile_Path> <outputPath>[ <th>]",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM},
+		{"PairedURL","PoliticalTweet","PairedURLMap","PairedURLReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT},
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。
@@ -155,10 +157,17 @@ public class AnalyzerMain {
 				WRITABLE_PACKAGE_SUFFIX + JOB_PROP[jobIndex][PROP_INDEX_OUTPUT_KEY_CLASS]));
 		job.setOutputValueClass(Class.forName(
 				WRITABLE_PACKAGE_SUFFIX + JOB_PROP[jobIndex][PROP_INDEX_OUTPUT_VALUE_CLASS]));
+		if (JOB_PROP[jobIndex].length > PROP_INDEX_MAPPER_VALUE_CLASS) {
+			job.setMapOutputKeyClass(Class.forName(
+					WRITABLE_PACKAGE_SUFFIX + JOB_PROP[jobIndex][PROP_INDEX_MAPPER_KEY_CLASS]));
+			job.setMapOutputValueClass(Class.forName(
+					WRITABLE_PACKAGE_SUFFIX + JOB_PROP[jobIndex][PROP_INDEX_MAPPER_VALUE_CLASS]));
+		} else {
+			job.setCombinerClass((Class<? extends Reducer<Writable,Writable,Writable,Writable>>) Class.forName(
+					curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS] + "$" + JOB_PROP[jobIndex][PROP_INDEX_REDUCE_CLASS]));
+		}
 		job.setMapperClass((Class<? extends Mapper<Writable,Writable,Writable,Writable>>) Class.forName(
 				curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS] + "$" + JOB_PROP[jobIndex][PROP_INDEX_MAP_CLASS]));
-		job.setCombinerClass((Class<? extends Reducer<Writable,Writable,Writable,Writable>>) Class.forName(
-				curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS] + "$" + JOB_PROP[jobIndex][PROP_INDEX_REDUCE_CLASS]));
 		job.setReducerClass((Class<? extends Reducer<Writable,Writable,Writable,Writable>>) Class.forName(
 				curPackage + JOB_PROP[jobIndex][PROP_INDEX_JOB_CLASS] + "$" + JOB_PROP[jobIndex][PROP_INDEX_REDUCE_CLASS]));
 		

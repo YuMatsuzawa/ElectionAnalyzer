@@ -45,6 +45,7 @@ public class AnalyzerMain {
 	protected final static String PROP_TEXT = "Text";
 	protected final static String PROP_LONG = "LongWritable";
 	protected final static String PROP_INT = "IntWritable";
+	protected final static String PROP_DOUBLE = "DoubleWritable";
 	
 	protected final static String INPUT_FORMAT_PACKAGE_SUFFIX = "org.apache.hadoop.mapred.";
 	protected final static String WRITABLE_PACKAGE_SUFFIX = "org.apache.hadoop.io.";
@@ -82,6 +83,7 @@ public class AnalyzerMain {
 		{"FilterURL","PoliticalTweet","FilterURLMap","FilterURLReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM},
 		{"ThresholdURL","PoliticalTweet","ThresholdURLMap","ThresholdURLReduce"," <input_textFile_Path> <outputPath>[ <th>]",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM},
 		{"PairedURL","PoliticalTweet","PairedURLMap","PairedURLReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT},
+		{"JaccardLink","GraphAnalysis","JaccardLinkMap","JaccardLinkReduce"," <input_textFile_Path> <outputPath>[ <th in Double>]",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_DOUBLE,SINGLE_REDUCE_NUM},
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。

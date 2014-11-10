@@ -26,7 +26,12 @@ public class URLExpander {
 		while(tmp!=null && hopNum < MAX_HOP) { //loop until find some reachable destination. but be carful of redirection loop.
 			hopNum++;
 			destURL = tmp;
-			tmp = connectWithoutRedirect(tmp);
+			try {
+				tmp = connectWithoutRedirect(tmp);
+			} catch (MalformedURLException e) {
+				// TODO 自動生成された catch ブロック
+				e.printStackTrace();
+			}
 		}
 		if (hopNum < MAX_HOP) {
 			System.out.println("Reached :\t"+destURL);
@@ -35,7 +40,7 @@ public class URLExpander {
 		}
 	}
 
-	public static String connectWithoutRedirect(String args) {
+	public static String connectWithoutRedirect(String args) throws MalformedURLException {
 		return connectWithoutRedirect(args, false);
 	}
 	
@@ -83,7 +88,7 @@ public class URLExpander {
 	/**
 	 * @param args
 	 */
-	private static String connectWithoutRedirect(String args, boolean debug) {
+	private static String connectWithoutRedirect(String args, boolean debug) throws MalformedURLException {
 		URL inputUrl = null;
 		HttpURLConnection conn = null;
 		String ret = null;
@@ -105,15 +110,16 @@ public class URLExpander {
 			}
 			
 			ret = (conn.getHeaderField("Location") != null)? conn.getHeaderField("Location") : null;
-			try {
-				URL outputUrl = new URL(ret);
-				return outputUrl.toString();
-			} catch (MalformedURLException e) {
-//				inputUrl.getProtocol()+"://"+inputUrl.getHost()+
-				System.err.println("Malformed URL returned from:\t"+args);
-				System.err.println("Malformed URL:\t"+ret);
-			}
-		} catch (Exception e) {
+			return ret;
+//			try {
+//				URL outputUrl = new URL(ret);
+//				return outputUrl.toString();
+//			} catch (MalformedURLException e) {
+////				inputUrl.getProtocol()+"://"+inputUrl.getHost()+
+//				System.err.println("Malformed URL returned from:\t"+args);
+//				System.err.println("Malformed URL:\t"+ret);
+//			}
+		} catch (IOException e) {
 			System.err.println("Error on connecting URL:\t"+args);
 			e.printStackTrace();
 			if (debug) {

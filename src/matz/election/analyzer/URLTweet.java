@@ -2,6 +2,7 @@ package matz.election.analyzer;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -59,8 +60,67 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
  				}
 				output.collect(urlText, one); //URLがなかった場合は"noURL"のまま、あった場合は"withURL"になっている。
 			}
+		}	
+	}
+	
+	/**短縮URL展開とアンカー・クエリ除去したURLをKey、言及ユーザをValueとするペアでエッジを表現するレコードを出力するマップ。<br>
+	 * Reducer内で短縮URL展開すれば、1URLに対し（1+Combine回数）コネクションで済むので軽いはず。アンカー・クエリ除去はMapper内でやる。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class URLReferMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, LongWritable> {
+
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<Text, LongWritable> output, Reporter reporter)
+				throws IOException {
+			try {
+				Status tweet = TwitterObjectFactory.createStatus(value.toString());
+				for (URLEntity url : tweet.getURLEntities()) {
+					String urlStr = url.getExpandedURL();
+					if (urlStr == null) urlStr = url.getURL();
+					urlStr = URLExpander.trimURL(urlStr);
+					
+					output.collect(new Text(urlStr), new LongWritable(tweet.getId()));
+				}
+			} catch (TwitterException e) {
+				e.printStackTrace();
+			}
+			
 		}
-		
+	}
+	
+	public static class URLReferReduce extends MapReduceBase implements Reducer<Text, LongWritable, Text, LongWritable> {
+
+		@Override
+		public void reduce(Text key, Iterator<LongWritable> values,
+				OutputCollector<Text, LongWritable> output, Reporter reporter)
+				throws IOException {
+			String urlStr = key.toString();
+			String tmpStr = key.toString();
+			int count = 0;
+			boolean isLoop = false, isMalformed = false;
+			while (tmpStr!=null) {
+				count++;
+				if (count >= 10) {
+					isLoop = true;
+					break;
+				}
+				try {
+					tmpStr = URLExpander.connectWithoutRedirect(tmpStr);
+				} catch (MalformedURLException e) {
+					isMalformed = true;
+					e.printStackTrace();
+					break;
+				}
+			}
+			if (!isLoop && !isMalformed) urlStr = tmpStr;
+			
+			Text urlText = new Text(urlStr);
+			while(values.hasNext()) {
+				output.collect(urlText, values.next());
+			}
+		}
 	}
 	
 	/**URLCountで得た結果を元に言及された回数ごとに頻度を数える。<br>

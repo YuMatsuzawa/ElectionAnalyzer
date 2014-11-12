@@ -27,9 +27,11 @@ public class URLExpander {
 			hopNum++;
 			destURL = tmp;
 			try {
-				tmp = connectWithoutRedirect(tmp);
+				tmp = connectWithoutRedirect(tmp,true);
 			} catch (MalformedURLException e) {
 				// TODO 自動生成された catch ブロック
+				e.printStackTrace();
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -40,7 +42,7 @@ public class URLExpander {
 		}
 	}
 
-	public static String connectWithoutRedirect(String args) throws MalformedURLException {
+	public static String connectWithoutRedirect(String args) throws MalformedURLException, Exception {
 		return connectWithoutRedirect(args, false);
 	}
 	
@@ -88,46 +90,37 @@ public class URLExpander {
 	/**
 	 * @param args
 	 */
-	private static String connectWithoutRedirect(String args, boolean debug) throws MalformedURLException {
+	public static String connectWithoutRedirect(String args, boolean debug) throws MalformedURLException, Exception {
 		URL inputUrl = null;
 		HttpURLConnection conn = null;
-		String ret = null;
-		try {
-			inputUrl = new URL(args);
-			
-			conn = (HttpURLConnection) inputUrl.openConnection();
-			conn.setInstanceFollowRedirects(false);
-			conn.setConnectTimeout(10*1000);
+		inputUrl = new URL(args);
+		
+		conn = (HttpURLConnection) inputUrl.openConnection();
+		conn.setConnectTimeout(10*1000);
+		conn.setInstanceFollowRedirects(false);
+		
+		conn.connect();
 
-			if (debug) {
-				for (Entry<String, List<String>> headers : conn.getHeaderFields().entrySet()) {
-					System.out.print(headers.getKey() + " :");
-					for (String value : headers.getValue()) {
-						System.out.println("\t"+value);
-					}
+		if (debug) {
+			for (Entry<String, List<String>> headers : conn.getHeaderFields().entrySet()) {
+				System.out.print(headers.getKey() + " :");
+				for (String value : headers.getValue()) {
+					System.out.println("\t"+value);
 				}
-				System.out.println();
 			}
-			
-			ret = (conn.getHeaderField("Location") != null)? conn.getHeaderField("Location") : null;
-			return ret;
-//			try {
-//				URL outputUrl = new URL(ret);
-//				return outputUrl.toString();
-//			} catch (MalformedURLException e) {
-////				inputUrl.getProtocol()+"://"+inputUrl.getHost()+
-//				System.err.println("Malformed URL returned from:\t"+args);
-//				System.err.println("Malformed URL:\t"+ret);
-//			}
-		} catch (IOException e) {
-			System.err.println("Error on connecting URL:\t"+args);
-			e.printStackTrace();
-			if (debug) {
-				System.err.println("Pass proper URL.");
-				System.exit(1);
-			}
+			System.out.println();
 		}
-		return args;
+
+		String ret = conn.getHeaderField("Location");
+
+		try {
+			conn.getInputStream().close();
+//			conn.getOutputStream().close();
+			conn.disconnect();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return ret;
 	}
 	
     /**<s>THIS WON'T WORK.</s>THIS ACTUALLY WORKS.<br>

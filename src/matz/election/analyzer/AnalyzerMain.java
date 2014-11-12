@@ -69,7 +69,7 @@ public class AnalyzerMain {
 		{"RetweetCount","TweetCount","RetweetMap","LongIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM},
 		{"RetweetFreq","TweetCount","RetweetFreqMap","IntIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_INT,SINGLE_REDUCE_NUM},
 		{"URLCount","URLTweet","URLCountMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
-		{"URLRefer","URLTweet","URLReferMap","URLReferReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_LONG,BALANCED_REDUCE_NUM},
+		{"URLRefer","URLTweet","URLReferMap","URLReferReduce"," <input_seqFile_Path> <outputPath>",PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_LONG,BALANCED_REDUCE_NUM,PROP_TEXT,PROP_LONG},
 		{"URLFreq","URLTweet","URLFreqMap","IntIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_INT,SINGLE_REDUCE_NUM},
 		{"BuzzExtract","URLTweet","BuzzExtractMap","BuzzExtractReduce"," <input_textFile_Path> <outputPath> [<buzzThreshold>]",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM},
 		{"BuzzURLExpand","URLTweet","BuzzURLExpandMap","TextIntReduce"," <input_textFile_Path> <outputPath>",PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},

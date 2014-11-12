@@ -5,6 +5,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -85,40 +86,61 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 				}
 			} catch (TwitterException e) {
 				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 			
 		}
 	}
 	
 	public static class URLReferReduce extends MapReduceBase implements Reducer<Text, LongWritable, Text, LongWritable> {
-
+		private int threshold = 10;
+		
 		@Override
 		public void reduce(Text key, Iterator<LongWritable> values,
 				OutputCollector<Text, LongWritable> output, Reporter reporter)
 				throws IOException {
-			String urlStr = key.toString();
-			String tmpStr = key.toString();
-			int count = 0;
-			boolean isLoop = false, isMalformed = false;
-			while (tmpStr!=null) {
-				count++;
-				if (count >= 10) {
-					isLoop = true;
-					break;
+			HashSet<LongWritable> collected = new HashSet<LongWritable>();
+			while(values.hasNext()) collected.add(values.next());
+
+			if (collected.size() >= threshold) {
+				String urlStr = "";
+				String tmpStr = key.toString();
+				int count = 0;
+				@SuppressWarnings("unused")
+				boolean isLoop = false, isMalformed = false, isReachable = true;
+				while (tmpStr!=null) {
+					urlStr = tmpStr;
+					count++;
+					if (count >= 10) {
+						isLoop = true;
+						break;
+					}
+					try {
+						Thread.sleep(50);
+						tmpStr = URLExpander.connectWithoutRedirect(tmpStr,false);
+					} catch (MalformedURLException e) {
+						isMalformed = true;
+						e.printStackTrace();
+						break;
+					} catch (InterruptedException e) {
+						//do nothing.
+					} catch (Exception e) {
+						/* Exceptions other than MalformedURL are including IOException and UnknownhostException,
+						 * which practically means specified URL is somehow unreachable at the moment. 
+						 */
+						e.printStackTrace();
+						isReachable = false;
+					}
 				}
-				try {
-					tmpStr = URLExpander.connectWithoutRedirect(tmpStr);
-				} catch (MalformedURLException e) {
-					isMalformed = true;
-					e.printStackTrace();
-					break;
+				if (!isMalformed) {
+					if (isLoop) urlStr = key.toString();
+
+					Text urlText = new Text(urlStr);
+					for (LongWritable value : collected) {
+						output.collect(urlText, value);
+					}
 				}
-			}
-			if (!isLoop && !isMalformed) urlStr = tmpStr;
-			
-			Text urlText = new Text(urlStr);
-			while(values.hasNext()) {
-				output.collect(urlText, values.next());
 			}
 		}
 	}

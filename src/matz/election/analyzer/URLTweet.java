@@ -82,7 +82,7 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 					if (urlStr == null) urlStr = url.getURL();
 					urlStr = URLExpander.trimURL(urlStr);
 					
-					output.collect(new Text(urlStr), new LongWritable(tweet.getId()));
+					output.collect(new Text(urlStr), new LongWritable(tweet.getUser().getId()));
 				}
 			} catch (TwitterException e) {
 				e.printStackTrace();

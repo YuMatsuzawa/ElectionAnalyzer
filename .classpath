@@ -3,7 +3,11 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Hadoop-0.20.2-cdh3u5"/>
-	<classpathentry kind="lib" path="lib/twitter4j-core-4.0.2.jar" sourcepath="lib/twitter4j-4.0.2/twitter4j-core/src"/>
+	<classpathentry kind="lib" path="lib/twitter4j-core-4.0.2.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://twitter4j.org/javadoc/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="lib" path="lib/jsoup-1.8.1.jar" sourcepath="lib/jsoup-1.8.1-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

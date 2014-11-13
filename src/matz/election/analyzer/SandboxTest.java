@@ -3,8 +3,14 @@
  */
 package matz.election.analyzer;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
-import java.util.Map.Entry;
+
+import twitter4j.Status;
+import twitter4j.TwitterObjectFactory;
 
 /**testing ground.
  * @author YuMatsuzawa
@@ -29,27 +35,25 @@ public class SandboxTest {
 		testMap.put("d1", d2);
 		testMap.put("e1", e2);
 
-		int i = 0, j = 0;
-		for (Entry<String, String[]> pair : testMap.entrySet()) {
-//			Entry<String, String[]> keyPair = pair;
-			String keyStr = pair.getKey()+","+join(pair.getValue());
-//			testMap.remove(pair.getKey()); 													//removing picked entry from Map.
-			int cur = i;
-			for (Entry<String, String[]> valPair : testMap.entrySet()) {
-				if (j > cur) {
-					String valStr = valPair.getKey()+","+join(valPair.getValue());
-	//				output.collect(new Text(keyStr), new Text(valStr));
-					System.out.println(keyStr+"\t"+valStr);
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new InputStreamReader(new FileInputStream(new File("sampleTweetLog.txt"))));
+			String line = null;
+			while ((line = br.readLine()) != null) {
+				if (line.isEmpty()) continue;
+				Status tweet = TwitterObjectFactory.createStatus(line);
+				if (tweet.isRetweet()) {
+					System.out.println(tweet.toString());
+					System.out.println(TwitterObjectFactory.getRawJSON(tweet.getRetweetedStatus()));
 				}
-				j++;
 			}
-			i++;
-			j = 0;
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
 	}
 
-	private static String join(String[] strings) {
+	public static String join(String[] strings) {
 		String ret = "";
 		for(String str : strings) {
 			if (!ret.isEmpty()) ret += ",";

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -82,7 +82,7 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 					if (urlStr == null) urlStr = url.getURL();
 					urlStr = URLExpander.trimURL(urlStr);
 					
-					output.collect(new Text(urlStr), new LongWritable(tweet.getUser().getId()));
+					output.collect(new Text(urlStr), key);
 				}
 			} catch (TwitterException e) {
 				e.printStackTrace();
@@ -94,14 +94,16 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 	}
 	
 	public static class URLReferReduce extends MapReduceBase implements Reducer<Text, LongWritable, Text, LongWritable> {
-		private int threshold = 10;
+		private int threshold = 2;
 		
 		@Override
 		public void reduce(Text key, Iterator<LongWritable> values,
 				OutputCollector<Text, LongWritable> output, Reporter reporter)
 				throws IOException {
-			HashSet<LongWritable> collected = new HashSet<LongWritable>();
-			while(values.hasNext()) collected.add(values.next());
+			List<LongWritable> collected = new ArrayList<LongWritable>();
+			while(values.hasNext()) {
+				collected.add(values.next());
+			}
 
 			if (collected.size() >= threshold) {
 				String urlStr = "";

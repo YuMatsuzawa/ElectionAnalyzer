@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import matz.election.analyzer.util.URLExpander;
 
@@ -65,7 +62,7 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 	}
 	
 	/**短縮URL展開とアンカー・クエリ除去したURLをKey、言及ユーザをValueとするペアでエッジを表現するレコードを出力するマップ。<br>
-	 * Reducer内で短縮URL展開すれば、1URLに対し（1+Combine回数）コネクションで済むので軽いはず。アンカー・クエリ除去はMapper内でやる。
+	 * Reducer内で短縮URL展開すれば、1URLに対し1コネクションで済むので軽いはず。アンカー・クエリ除去はMapper内でやる。Combinerを定義せずに置く。
 	 * @author YuMatsuzawa
 	 *
 	 */
@@ -82,7 +79,7 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 					if (urlStr == null) urlStr = url.getURL();
 					urlStr = URLExpander.trimURL(urlStr);
 					
-					output.collect(new Text(urlStr), key);
+					output.collect(new Text(urlStr), new LongWritable(tweet.getUser().getId()));
 				}
 			} catch (TwitterException e) {
 				e.printStackTrace();
@@ -93,17 +90,30 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 		}
 	}
 	
-	public static class URLReferReduce extends MapReduceBase implements Reducer<Text, LongWritable, Text, LongWritable> {
-		private int threshold = 2;
+	/**Mapperのところで書いたように、このReducerではURLコネクションを開くので、Combinerとして使用しないこと。そのために、MapperOutputClassを指定しておくこと。また、閾値を受け取る。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class URLReferReduce extends MapReduceBase implements Reducer<Text, LongWritable, Text, LongWritable>, JobConfigurable {
+		private int threshold = 10;
+
+		public void configure(JobConf job) {
+			String extraArg = job.get("arg3");
+			if (extraArg != null) {
+				try {
+					threshold = Integer.parseInt(extraArg);
+				} catch (NumberFormatException e) {
+					//do nothing. default value will be kept.
+				}
+			}
+		}
 		
 		@Override
 		public void reduce(Text key, Iterator<LongWritable> values,
 				OutputCollector<Text, LongWritable> output, Reporter reporter)
 				throws IOException {
-			List<LongWritable> collected = new ArrayList<LongWritable>();
-			while(values.hasNext()) {
-				collected.add(values.next());
-			}
+			Set<String> collected = new HashSet<String>();
+			while(values.hasNext()) collected.add(values.next().toString());
 
 			if (collected.size() >= threshold) {
 				String urlStr = "";
@@ -139,12 +149,97 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 					if (isLoop) urlStr = key.toString();
 
 					Text urlText = new Text(urlStr);
-					for (LongWritable value : collected) {
-						output.collect(urlText, value);
+					for (String user : collected) {
+						output.collect(urlText, new LongWritable(Long.valueOf(user)));
 					}
 				}
 			}
 		}
+	}
+	
+	/**URLReferで作ったURL-ユーザのエッジファイルを読み、CSV化する。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class URLReferListMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
+
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			String[] edge = value.toString().split("\\s");
+			if (edge.length == 2) {
+				String url = edge[0], user = edge[1];
+				output.collect(new Text(url), new Text(user));
+			}
+		}
+		
+	}
+	
+	/**集計してValをCSV化する。Combinerで呼べるように実装される。即ち、valueがすでにCSVでも、まだ単一要素のみでも同じようにカンマ区切りでconcatする。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class URLReferListReduce extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
+
+		@Override
+		public void reduce(Text key, Iterator<Text> values,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			String csv = "";
+			while(values.hasNext()) {
+				if (!csv.isEmpty()) csv += ",";
+				csv += values.next().toString();
+			}
+			output.collect(key, new Text(csv));
+		}
+		
+	}
+	
+	/**URL-ユーザCSVのファイルを読み、全ての重複しない組合せを出力する。即ちJOIN。Mapperは行を読み、カンマで結合し、統一KeyのもとでReducerに投入する。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class URLJoinMap extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, Text> {
+		private static IntWritable one = new IntWritable(1);
+		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<IntWritable, Text> output, Reporter reporter)
+				throws IOException {
+			String[] pair = value.toString().split("\\s");
+			if (pair.length==2) {
+				output.collect(one, new Text(pair[0]+","+pair[1]));
+			}
+		}
+	}
+	
+	/**重複しない組合せを出力する。出力Textはタブ区切りで読める。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class URLJoinReduce extends MapReduceBase implements Reducer<IntWritable, Text, Text, Text> {
+
+		@Override
+		public void reduce(IntWritable key, Iterator<Text> values,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			ArrayList<String> total = new ArrayList<String>();
+			while(values.hasNext()) total.add(values.next().toString());
+			
+			int i = 0;
+			for (String pair : total) {
+				int j = 0, cur = i;
+				for (String innerPair : total) {
+					if (j > cur) {
+						output.collect(new Text(pair), new Text(innerPair));
+					}
+					j++;
+				}
+				i++;
+			}
+		}
+		
 	}
 	
 	/**URLCountで得た結果を元に言及された回数ごとに頻度を数える。<br>

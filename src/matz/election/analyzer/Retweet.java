@@ -138,4 +138,52 @@ public class Retweet {
 		}
 		
 	}
+	
+	/**ユーザの意見リスト（UOリスト）を参照データとするネットワークデータとの照合作業、その前段階として、
+	 * テストデータとなるUFリスト（RT行動を行っているユーザと、そのRT頻度のリスト）を生成するMap。<br>
+	 * このマップは、RetweetMap/Reduceで抽出した、(エンコ済みRT文面)=(RTしたユーザリスト)というデータを入力とする。Seqファイルになっているはず。<br>
+	 * ユーザリストをまずカンマスプリットし、各ユーザIDについてIntの1をマップする。Reducerはこれを集計するので、出力は(ユーザID)=(RTしたツイートの数)となる。<br>
+	 * UFリストやUOリストは最終的にDistributedCacheとして配布され、参照データとされる。これを考えると、出力はTextファイルで、単一Reducerが望ましい。<br>
+	 * 出力Textは従ってTSVファイルとなる。これをDistributedCacheの利用法(Hacksの83P移行参照)に基づいて、別タスクから参照する。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class RTFreqMap extends MapReduceBase implements Mapper<Text, Text, LongWritable, IntWritable> {
+		private static final IntWritable one = new IntWritable(1);
+		private LongWritable userID = new LongWritable();
+		
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<LongWritable, IntWritable> output, Reporter reporter)
+				throws IOException {
+			String[] users = value.toString().split(",");
+			for (String user : users) {
+				try {
+					userID.set(Long.valueOf(user));
+					output.collect(userID, one);
+				} catch(NumberFormatException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	/**詳細はRTFreqMap参照。単なる集計なので、Combinerとして使用可能である。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class RTFreqReduce extends MapReduceBase implements Reducer<LongWritable, IntWritable, LongWritable, IntWritable> {
+
+		@Override
+		public void reduce(LongWritable key, Iterator<IntWritable> values,
+				OutputCollector<LongWritable, IntWritable> output, Reporter reporter)
+				throws IOException {
+			int count = 0;
+			while(values.hasNext()) {
+				count += values.next().get(); // if value=1 then 1, otherwise (means combined beforehand) discrete number more than 1.
+			}
+			output.collect(key, new IntWritable(count));
+		}
+		
+	}
 }

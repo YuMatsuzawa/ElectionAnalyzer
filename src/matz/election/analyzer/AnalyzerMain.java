@@ -66,13 +66,13 @@ public class AnalyzerMain {
 		{"TweetCount","TweetCount","Map","TextIntReduce"," <input_seqFile_Path> <outputPath>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
 		{"UserTweetCount","TweetCount","UserTweetMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",
-				PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,BALANCED_REDUCE_NUM},
 		{"UserCount","TweetCount","UserCountMap","TextIntReduce"," <input_textFile_Path> <outputPath>",
-					PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
+			PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
 		{"TimeSeries","TweetCount","TimeStampMap","LongIntReduce"," <input_seqFile_Path> <outputPath>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM},
 		{"RetweetCount","TweetCount","RetweetMap","LongIntReduce"," <input_seqFile_Path> <outputPath>",
-				PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM},
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM},
 		{"RetweetFreq","TweetCount","RetweetFreqMap","IntIntReduce"," <input_textFile_Path> <outputPath>",
 			PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_INT,SINGLE_REDUCE_NUM},
 		{"URLCount","URLTweet","URLCountMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",
@@ -117,8 +117,10 @@ public class AnalyzerMain {
 			PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_DOUBLE,SINGLE_REDUCE_NUM},
 		{"Retweet","Retweet","RetweetMap","RetweetReduce"," <input_seqFile_Path> <outputPath>[ <th in Int>]",
 			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_TEXT,BALANCED_REDUCE_NUM,PROP_TEXT,PROP_LONG},
-		{"RTJoin","Retweet","RTCrossJoinMap","RTCrossJoinReduce"," <input_textFile_Path> <outputPath>",
+		{"RTJoin","Retweet","RTCrossJoinMap","RTCrossJoinReduce"," <input_seqFile_Path> <outputPath>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT},
+		{"RTFreq","Retweet","RTFreqMap","RTFreqReduce"," <input_seqFile_Path> <outputPath>",
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM}
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。

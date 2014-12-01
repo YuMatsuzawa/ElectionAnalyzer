@@ -3,7 +3,12 @@
  */
 package matz.election.analyzer;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -12,6 +17,11 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.lib.IdentityReducer;
+import org.apache.hadoop.mapreduce.Mapper.Context;
+
+import twitter4j.TwitterObjectFactory;
+import twitter4j.User;
 
 /**ツイートに含まれるURLの群とその言及ユーザの群からなる2部グラフから、URLのクラスタリングを行うクラス。<br>
  * その他のネットワーク関連解析も取り扱う。
@@ -133,4 +143,91 @@ public class GraphAnalysis {
 		}
 		
 	}
+	
+	/**フォロワーネットワークデータ(全世界)から、日本語ユーザ、及び政治関連ツイートをリツイートしたユーザ(Vocalユーザ)を抽出する。<br>
+	 * 入力データはSeqファイルで、Keyにユーザプロファイル、Valueにネットワーク情報のCSVが入っている。<br>
+	 * プロフィール内のlangを見てjaであれば無条件で通す。<br>
+	 * あるいは、DistributedCache内のUO/UFリストに含まれているVocalユーザであっても通す。<br>
+	 * そして、CSV内のユーザID全て(そのユーザ自身のIDも含めて)に、頻度値をスペース区切りで併記する。これを最初にやることで、後にDistributedCacheを参照する必要がなくなる。<br>
+	 * このマージ処理が重いので、時間は結構掛かるはず。UO/UFリストはマップとして取り込んでおけば多分多少速い。ユーザIDのKeyに対応するValue(頻度値)をすぐ引けるからである。<br>
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class FilterNetworkMap extends MapReduceBase implements Mapper<Text, Text, Text, Text> {
+		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
+		private static final String langja = "ja";
+		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
+		private Text csv = new Text();
+		
+		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param context
+		 */
+		@SuppressWarnings("rawtypes")
+		public void setup(Context context) {
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(linkname)));
+				String line = "";
+				while((line=br.readLine())!=null) {
+					String[] splits = line.split("\t");
+					Long userid = Long.parseLong(splits[0]);
+					Integer freq = Integer.parseInt(splits[1]);
+					uxlist.put(userid, freq);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			try {
+				User user = TwitterObjectFactory.createUser(key.toString());
+				if ( user.getLang().equalsIgnoreCase(langja) || uxlist.containsKey(user.getId()) ) {
+					String[] splits = value.toString().split(",");
+					ArrayList<Long> splitLong = new ArrayList<Long>();
+					for (String split : splits) {
+						try {
+							splitLong.add(Long.parseLong(split));
+						} catch(Exception e) {
+							e.printStackTrace();
+						}
+					}
+					Long userid = splitLong.get(0), numFollowed = splitLong.get(1), numFollowing = splitLong.get(2);
+					String newCsv = "";
+					newCsv += userid + " " + getFreqOf(userid) + "," + numFollowed + "," + numFollowing;
+					int count = 3;
+					while(count < splitLong.size()) {
+						newCsv += "," + getFreqOf(splitLong.get(count));
+						count++;
+					}
+					
+					csv.set(newCsv);
+					output.collect(key, csv);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		private Integer getFreqOf(Long userid) {
+			Integer freq = (uxlist.get(userid)!=null)? uxlist.get(userid) : 0;
+			return freq;
+		}
+		
+	}
+	
+	/**Mapperないで処理が完了するので、IdentityReducerで良い。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class FilterNetworkReduce extends IdentityReducer<Text, Text> {};
 }

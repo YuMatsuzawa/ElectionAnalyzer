@@ -1,5 +1,8 @@
 package matz.election.analyzer;
 
+import java.net.URI;
+
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.*;
@@ -50,16 +53,20 @@ public class AnalyzerMain {
 	protected final static String INPUT_FORMAT_PACKAGE_SUFFIX = "org.apache.hadoop.mapred.";
 	protected final static String WRITABLE_PACKAGE_SUFFIX = "org.apache.hadoop.io.";
 	
+	protected final static String DIST_CACHE = "DistributedCache";
+	protected final static String DIST_LINKNAME = "dist";
+	
 	protected final static int PROP_INDEX_JOB_NAME = 0, PROP_INDEX_JOB_CLASS = 1, PROP_INDEX_MAP_CLASS = 2,
 			PROP_INDEX_REDUCE_CLASS = 3, PROP_INDEX_USAGE = 4, PROP_INDEX_INPUT_FORMAT = 5, PROP_INDEX_OUTPUT_FORMAT = 6,
 			PROP_INDEX_OUTPUT_KEY_CLASS = 7, PROP_INDEX_OUTPUT_VALUE_CLASS = 8, PROP_INDEX_REDUCE_NUM = 9,
-			PROP_INDEX_MAPPER_KEY_CLASS = 10, PROP_INDEX_MAPPER_VALUE_CLASS = 11;
+			PROP_INDEX_MAPPER_KEY_CLASS = 10, PROP_INDEX_MAPPER_VALUE_CLASS = 11, PROP_INDEX_DIST_CACHE = 12;
 	
 	
 	/**使用可能なジョブについての情報を保持する2次元配列。<br>
 	 * ジョブは適当な名前をつけ、同一パッケージのクラス内に使用するMapper/Reducerをサブクラスとして定義する。<br>
 	 * 本配列内にジョブ名、定義クラス、使用するMapper名、Reducer名、引数、入力ファイルフォーマット、出力ファイルフォーマット、出力Key形式、出力Value形式、Reducer数をStringで記述する。<br>
 	 * Mapper出力の形式とReducer出力の形式が異なる場合は、Mapperの出力クラスを末尾に記述する。この指定がある場合はCombinerが定義されない。<br>
+	 * さらにその後に、DistributedCacheで配布するファイルが有る場合は、DIST_CACHEを付与する。<br>
 	 * main関数内で、本配列に登録された各種クラスを名前引きでロードし、jobインスタンスに投入、job実行する。
 	 */
 	protected final static String[][] JOB_PROP = {
@@ -120,7 +127,9 @@ public class AnalyzerMain {
 		{"RTJoin","Retweet","RTCrossJoinMap","RTCrossJoinReduce"," <input_seqFile_Path> <outputPath>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT},
 		{"RTFreq","Retweet","RTFreqMap","RTFreqReduce"," <input_seqFile_Path> <outputPath>",
-			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM}
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM},
+		{"FilterNetwork","GraphAnalysis","FilterNetworkMap","FilterNetworkReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
+			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_TEXT,BALANCED_REDUCE_NUM,PROP_TEXT,PROP_TEXT,DIST_CACHE}
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。
@@ -174,8 +183,24 @@ public class AnalyzerMain {
 				FileOutputFormat.setOutputPath(job, new Path(args[2]));
 
 				//残りのコマンドライン引数を全てjobConfのプロパティとして渡す。これはMapperやReducer内部からcontext経由で取得できる。
-				for (int i = 3; i < args.length; i++) {
-					job.set(String.format("arg%d",i), args[i]);
+				//DistributedCacheに配布するファイルの指定が必要な場合のみ例外として処理する。
+				if (JOB_PROP[jobIndex].length > PROP_INDEX_DIST_CACHE) {
+					if (args.length > 3) {
+						Path distFile = new Path(args[3]);
+						URI uri = new URI(distFile.toString() + "#" + DIST_LINKNAME);
+						DistributedCache.addCacheFile(uri, job);
+						DistributedCache.createSymlink(job);
+						for (int i = 4; i < args.length; i++) {
+							job.set(String.format("arg%d",i), args[i]);
+						}
+					} else {
+						System.err.println("Usage: " + JOB_PROP[jobIndex][PROP_INDEX_JOB_NAME] + JOB_PROP[jobIndex][PROP_INDEX_USAGE]);
+						System.exit(1);
+					}
+				} else {
+					for (int i = 3; i < args.length; i++) {
+						job.set(String.format("arg%d",i), args[i]);
+					}
 				}
 			} else {
 				System.err.println("Usage: " + JOB_PROP[jobIndex][PROP_INDEX_JOB_NAME] + JOB_PROP[jobIndex][PROP_INDEX_USAGE]);

@@ -127,7 +127,7 @@ public class AnalyzerMain {
 		{"RTJoin","Retweet","RTCrossJoinMap","RTCrossJoinReduce"," <input_seqFile_Path> <outputPath>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT},
 		{"RTFreq","Retweet","RTFreqMap","RTFreqReduce"," <input_seqFile_Path> <outputPath>",
-			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM},
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM,PROP_LONG,PROP_INT},
 		{"FilterNetwork","GraphAnalysis","FilterNetworkMap","FilterNetworkReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
 			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_TEXT,BALANCED_REDUCE_NUM,PROP_TEXT,PROP_TEXT,DIST_CACHE}
 	};

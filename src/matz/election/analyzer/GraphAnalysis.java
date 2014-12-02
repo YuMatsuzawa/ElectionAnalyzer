@@ -156,6 +156,7 @@ public class GraphAnalysis {
 	public static class FilterNetworkMap extends MapReduceBase implements Mapper<Text, Text, Text, Text> {
 		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
 		private static final String langja = "ja";
+		private static final int followLimit = 2000;
 		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
 		private Text csv = new Text();
 		
@@ -202,8 +203,12 @@ public class GraphAnalysis {
 						}
 					}
 					Long userid = splitLong.get(0), numFollowed = splitLong.get(1), numFollowing = splitLong.get(2);
+					if (numFollowing > followLimit) return;
+					
 					String newCsv = "";
 					newCsv += userid + " " + getFreqOf(userid) + "," + numFollowed + "," + numFollowing;
+					
+					
 					int count = 3;
 					while(count < splitLong.size()) {
 						newCsv += "," + getFreqOf(splitLong.get(count));

@@ -168,11 +168,12 @@ public class Retweet {
 		}
 	}
 	
-	/**詳細はRTFreqMap参照。単なる集計なので、Combinerとして使用可能である。
+	/**詳細はRTFreqMap参照。単なる集計なので、<s>Combinerとして使用可能である。</s>閾値を設けてリストを縮小することにしたので、Combinerとしては使用できない。
 	 * @author YuMatsuzawa
 	 *
 	 */
 	public static class RTFreqReduce extends MapReduceBase implements Reducer<LongWritable, IntWritable, LongWritable, IntWritable> {
+		private static final int threshold = 10;
 
 		@Override
 		public void reduce(LongWritable key, Iterator<IntWritable> values,
@@ -182,7 +183,9 @@ public class Retweet {
 			while(values.hasNext()) {
 				count += values.next().get(); // if value=1 then 1, otherwise (means combined beforehand) discrete number more than 1.
 			}
-			output.collect(key, new IntWritable(count));
+			if (count >= threshold) {
+				output.collect(key, new IntWritable(count));
+			}
 		}
 		
 	}

@@ -34,7 +34,14 @@ public class SandboxTest {
 		testMap.put("c1", c2);
 		testMap.put("d1", d2);
 		testMap.put("e1", e2);
-
+		
+		int sub = 1;
+		do {
+			System.out.println(sub);
+		} while(sub++ < 3);
+		System.exit(0);
+		
+		
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new InputStreamReader(new FileInputStream(new File("sampleTweetLog.txt"))));

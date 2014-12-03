@@ -202,17 +202,21 @@ public class GraphAnalysis {
 							e.printStackTrace();
 						}
 					}
+					
 					Long userid = splitLong.get(0), numFollowed = splitLong.get(1), numFollowing = splitLong.get(2);
-					if (numFollowing > followLimit) return;
+					if (numFollowing > followLimit) return; // remove excessive following user
 					
 					String newCsv = "";
 					newCsv += userid + " " + getFreqOf(userid) + "," + numFollowed + "," + numFollowing;
 					
-					
-					int count = 3;
-					while(count < splitLong.size()) {
-						newCsv += "," + getFreqOf(splitLong.get(count));
-						count++;
+					if (numFollowing > 0) {
+						int count = 3;
+						while(count < splitLong.size()) {
+							Long tarUser = splitLong.get(count);
+							newCsv += "," + tarUser;
+							if(count > 2 + numFollowed) newCsv += ";" + getFreqOf(tarUser);
+							count++;
+						}
 					}
 					
 					csv.set(newCsv);

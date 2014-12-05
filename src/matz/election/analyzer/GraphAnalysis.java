@@ -28,6 +28,10 @@ import twitter4j.User;
  * @author YuMatsuzawa
  *
  */
+/**
+ * @author Yu
+ *
+ */
 public class GraphAnalysis {
 
 	/**PairedURL等を使ってJoinした、URL1,(comma-separated userid list)\tURL2,(comma-separated userid list)形式のText入力に対し、<br>
@@ -143,6 +147,34 @@ public class GraphAnalysis {
 		}
 		
 	}
+	
+	/**FilterNetworkよりもシンプルな条件指定の元で、フォロワーネットワークをフィルタリングするMapR。<br>
+	 * UserProfileを読み込んで、その中の値で絞り込む。実験的なものなので、引数ではなくメソッド内で条件を指定する。変更の際は再ビルドする。
+	 * @author Yu
+	 *
+	 */
+	public static class SimpleFilterNetworkMap extends MapReduceBase implements Mapper<Text, Text, Text, Text> {
+		private static final String langja = "ja";
+		private static final int followLimit = 2000;
+
+		@Override
+		public void map(Text key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
+			try {
+				User user = TwitterObjectFactory.createUser(key.toString());
+				if (user.getLang().equalsIgnoreCase(langja) && user.getFriendsCount() < followLimit) { // filter condition;
+					output.collect(key, value);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/**Mapperでフィルタリングを行っているので、Identityでよい。
+	 * @author Yu
+	 *
+	 */
+	public static class SimpleFilterNetworkReduce extends IdentityReducer<Text, Text> {};
 	
 	/**フォロワーネットワークデータ(全世界)から、日本語ユーザ、及び政治関連ツイートをリツイートしたユーザ(Vocalユーザ)を抽出する。<br>
 	 * 入力データはSeqファイルで、Keyにユーザプロファイル、Valueにネットワーク情報のCSVが入っている。<br>

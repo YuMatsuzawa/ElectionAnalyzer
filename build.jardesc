@@ -11,9 +11,9 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
+        <javaElement handleIdentifier="=ElectionAnalyzer/src"/>
+        <file path="/ElectionAnalyzer/lib/twitter4j-core-4.0.2.jar"/>
         <file path="/ElectionAnalyzer/lib/jsoup-1.8.1.jar"/>
         <file path="/ElectionAnalyzer/lib/commons-codec-1.10.jar"/>
-        <file path="/ElectionAnalyzer/lib/twitter4j-core-4.0.2.jar"/>
-        <javaElement handleIdentifier="=ElectionAnalyzer/src"/>
     </selectedElements>
 </jardesc>

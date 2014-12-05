@@ -192,7 +192,8 @@ public class GraphAnalysis {
 				throws IOException {
 			try {
 				User user = TwitterObjectFactory.createUser(key.toString());
-				if ( user.getLang().equalsIgnoreCase(langja) || uxlist.containsKey(user.getId()) ) {
+				if ( user.getFriendsCount() < followLimit && 
+						(user.getLang().equalsIgnoreCase(langja) || uxlist.containsKey(user.getId())) ) {
 					String[] splits = value.toString().split(",");
 					ArrayList<Long> splitLong = new ArrayList<Long>();
 					for (String split : splits) {

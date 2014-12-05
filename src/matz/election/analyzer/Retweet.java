@@ -173,7 +173,7 @@ public class Retweet {
 	 *
 	 */
 	public static class RTFreqReduce extends MapReduceBase implements Reducer<LongWritable, IntWritable, LongWritable, IntWritable> {
-		private static final int threshold = 10;
+		private static final int threshold = 100;
 
 		@Override
 		public void reduce(LongWritable key, Iterator<IntWritable> values,

@@ -7,18 +7,16 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
+import java.util.Map.Entry;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.lib.IdentityReducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 
 import twitter4j.TwitterObjectFactory;
 import twitter4j.User;
@@ -195,8 +193,7 @@ public class GraphAnalysis {
 		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
 		 * @param context
 		 */
-		@SuppressWarnings("rawtypes")
-		public void setup(Context context) {
+		public void configure(JobConf job) {
 			BufferedReader br = null;
 			try {
 				br = new BufferedReader(new InputStreamReader(new FileInputStream(linkname)));
@@ -218,16 +215,47 @@ public class GraphAnalysis {
 			}
 		}
 		
+		/* (非 Javadoc)ループを含む条件判定を1つだけ含むようにしたマッパ。
+		 * @see org.apache.hadoop.mapred.Mapper#map(java.lang.Object, java.lang.Object, org.apache.hadoop.mapred.OutputCollector, org.apache.hadoop.mapred.Reporter)
+		 */
 		@Override
 		public void map(Text key, Text value,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			String keyStr = key.toString();
+			//System.out.println(valStr.substring(0, (valStr.length() > 50)? 50 : valStr.length()));
+			try {
+				User user = TwitterObjectFactory.createUser(keyStr);
+				if ( user.getFriendsCount() < followLimit && uxlist.containsKey(user.getId()) ) {
+					output.collect(key, value);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		/**このMapメソッドの中ではかなり多くのループが回る。<br>
+		 * まず最初のif文の中にあるcontainsKeyは実質HashMapの中から合致するKeyを探してくるのでループ。<br>
+		 * Valueをカンマスプリットするために、String文字列を最初から最後まで走査するループ。<br>
+		 * Listを用意して、カンマスプリットしたアレイから移し替えつつ、Longパースするループ。<br>
+		 * その後出来上がったCSVを走査し、存在するユーザID一つ一つについて、UFリストを走査する二重ループ。<br>
+		 * 恐らく、このように処理を単一マッパの中に詰め込んでしまうためにヒープ領域エラーが発生している。新マッパは処理内容を大幅に減らし、複数のMapRを多段階に組み合わせることでエラーを防ぐ。
+		 * @param key
+		 * @param value
+		 * @param output
+		 * @param reporter
+		 * @throws IOException
+		 */
+		public void _map(Text key, Text value,
 				OutputCollector<Text, Text> output, Reporter reporter)
 				throws IOException {
 			try {
 				User user = TwitterObjectFactory.createUser(key.toString());
 				if ( user.getFriendsCount() < followLimit && 
 						(user.getLang().equalsIgnoreCase(langja) || uxlist.containsKey(user.getId())) ) {
-					String[] splits = value.toString().split(",");
-					ArrayList<Long> splitLong = new ArrayList<Long>();
+					
+					String[] splits = value.toString().split(",");			// culprit for timeout/OOM
+					ArrayList<Long> splitLong = new ArrayList<Long>();		// another culprit
 					for (String split : splits) {
 						try {
 							splitLong.add(Long.parseLong(split));
@@ -272,4 +300,298 @@ public class GraphAnalysis {
 	 *
 	 */
 	public static class FilterNetworkReduce extends IdentityReducer<Text, Text> {};
+	
+	public static class SimplifyAllMap extends MapReduceBase implements Mapper<Text, Text, LongWritable, Text> {
+		private static final int followLimit = 2000;
+		private LongWritable userid = new LongWritable();
+		private Text textCsv = new Text();
+		
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<LongWritable, Text> output, Reporter reporter)
+				throws IOException {
+			try {
+				User user = TwitterObjectFactory.createUser(key.toString());
+				if (user.getFriendsCount() < followLimit ) {
+					String csv = value.toString(), newCsv = "";
+					String[] splitCsv = csv.split(",");
+					String numFollowed = splitCsv[1], numFollowing = splitCsv[2];
+					int index = 3;
+					if (!numFollowed.equals("-1") && !numFollowing.equals("-1")) {
+						int intFollowed = Integer.valueOf(numFollowed), intFollowing = Integer.valueOf(numFollowing);
+						index += intFollowed;
+						for (int i = index; i < index + intFollowing; i++) {
+							if (!newCsv.isEmpty()) newCsv += ",";
+							newCsv += splitCsv[i];
+						}
+						textCsv.set(newCsv);
+						userid.set(user.getId());
+						output.collect(userid, textCsv);
+					}
+				}
+			} catch (Exception e) {};
+
+		}
+	}
+	
+	public static class SimplifyAllReduce extends IdentityReducer<LongWritable, Text> {};
+
+	/**フィルタリングしたネットワークデータのValueに入っているCSVのうち、Friends（Following）リストだけを残して他をドロップするマップ。<br>
+	 * FollowingListはCSV末尾に当たる。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class ReduceCSVMap extends MapReduceBase implements Mapper<Text, Text, Text, Text> {
+		private Text textCsv = new Text();
+		
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			String csv = value.toString(), newCsv = "";
+			String[] splitCsv = csv.split(",");
+			String numFollowed = splitCsv[1], numFollowing = splitCsv[2];
+			int index = 3;
+			if (!numFollowed.equals("-1") && !numFollowing.equals("-1")) {
+				int intFollowed = Integer.valueOf(numFollowed), intFollowing = Integer.valueOf(numFollowing);
+				index += intFollowed;
+				for (int i = index; i < index + intFollowing; i++) {
+					if (!newCsv.isEmpty()) newCsv += ",";
+					newCsv += splitCsv[i];
+				}
+				textCsv.set(newCsv);
+				output.collect(key, textCsv);
+			}
+			
+		}
+	}
+	
+	public static class ReduceCSVReduce extends IdentityReducer<Text, Text> {};
+	
+	public static class SimplifyNetworkMap extends MapReduceBase implements Mapper<Text, Text, LongWritable, Text> {
+		private static final int followLimit = 2000;
+		private LongWritable userid = new LongWritable();
+
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<LongWritable, Text> output, Reporter reporter)
+				throws IOException {
+			try {
+				User user = TwitterObjectFactory.createUser(key.toString());
+				if ( user.getFriendsCount() < followLimit ) {
+					userid.set(user.getId());
+					output.collect(userid, value);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public static class SimplifyNetworkReduce extends IdentityReducer<LongWritable, Text> {};
+	
+	public static class DistCacheTestMap extends MapReduceBase implements Mapper<Text, Text, LongWritable, IntWritable> {
+		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
+		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
+				
+		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param context
+		 */		
+		public void configure(JobConf job) {
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(linkname)));
+				String line = "";
+				while((line=br.readLine())!=null) {
+					String[] splits = line.split("\t");
+					Long userid = Long.parseLong(splits[0]);
+					Integer freq = Integer.parseInt(splits[1]);
+					System.out.println(userid);
+					uxlist.put(userid, freq);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<LongWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			for (Entry<Long, Integer> entry : uxlist.entrySet()) {
+				output.collect(new LongWritable(entry.getKey()), new IntWritable(entry.getValue()));
+				break;
+			}
+		}
+	}
+	
+	public static class DistCacheTestReduce extends IdentityReducer<LongWritable, IntWritable> {};
+	
+	/**UFリストを参照データとし、Vocalユーザ群について、各ユーザのRT数と、そのユーザの周囲のVocalユーザ率をマップする。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class LocalMajorityByAttitudeMap extends MapReduceBase implements Mapper<Text, Text, IntWritable, DoubleWritable> {
+		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
+		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
+		
+		private IntWritable numRT = new IntWritable();
+		private DoubleWritable rate = new DoubleWritable();
+		
+		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param context
+		 */
+		public void configure(JobConf job) {
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(linkname)));
+				String line = "";
+				while((line=br.readLine())!=null) {
+					String[] splits = line.split("\t");
+					Long userid = Long.parseLong(splits[0]);
+					Integer freq = Integer.parseInt(splits[1]);
+					System.out.println(userid);
+					uxlist.put(userid, freq);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<IntWritable, DoubleWritable> output,
+				Reporter reporter) throws IOException {
+			try {
+				User user = TwitterObjectFactory.createUser(key.toString());
+				Long userId = user.getId();
+				if ( uxlist.containsKey(userId) ) { // which means the user is Vocal
+					numRT.set(getFreqOf(userId));
+					
+					String[] followingList = value.toString().split(",");
+					int numFollowing = followingList.length;
+					double vocalRate = 0.0;
+					for (String followingId : followingList) {
+						try {
+							Long followingIdByLong = Long.valueOf(followingId);
+							if (uxlist.containsKey(followingIdByLong)) {  // which means this followee is Vocal
+								vocalRate += 1.0;
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					vocalRate /= (double) numFollowing;
+					rate.set(vocalRate);
+					output.collect(numRT, rate);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		private Integer getFreqOf(Long userid) {
+			Integer freq = (uxlist.get(userid)!=null)? uxlist.get(userid) : 0;
+			return freq;
+		}
+		
+	}
+	
+	public static class LocalMajorityByAttitudeReduce extends IdentityReducer<IntWritable, DoubleWritable> {};
+	
+	/**UFリストを参照データとし、Vocalユーザ群について、各ユーザのRT数と、そのユーザの周囲のVocalユーザ率をマップする。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class VocalFriendsAverageMap extends MapReduceBase implements Mapper<Text, Text, IntWritable, Text> {
+		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
+		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
+		
+		private IntWritable numRT = new IntWritable();
+		private Text rates = new Text();
+		
+		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param context
+		 */
+		public void configure(JobConf job) {
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(linkname)));
+				String line = "";
+				while((line=br.readLine())!=null) {
+					String[] splits = line.split("\t");
+					Long userid = Long.parseLong(splits[0]);
+					Integer freq = Integer.parseInt(splits[1]);
+					System.out.println(userid);
+					uxlist.put(userid, freq);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<IntWritable, Text> output,
+				Reporter reporter) throws IOException {
+			try {
+				User user = TwitterObjectFactory.createUser(key.toString());
+				Long userId = user.getId();
+				if ( uxlist.containsKey(userId) ) { // which means the user is Vocal
+					numRT.set(getFreqOf(userId));
+					
+					String[] followingList = value.toString().split(",");
+					int numFollowing = followingList.length;
+					int numVocal = 0;
+					double avgRT = 0.0;
+					for (String followingId : followingList) {
+						try {
+							Long followingIdByLong = Long.valueOf(followingId);
+							if (uxlist.containsKey(followingIdByLong)) {  // which means this followee is Vocal
+								numVocal++;
+								avgRT += (double) getFreqOf(followingIdByLong);
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					double vocalAvgRT = 0.0, totalAvgRT = 0.0;
+					if (numVocal > 0) {
+						vocalAvgRT = avgRT / (double) numVocal;
+					}
+					totalAvgRT = avgRT / (double) numFollowing;
+					rates.set(vocalAvgRT + "," + totalAvgRT);
+					output.collect(numRT, rates);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		private Integer getFreqOf(Long userid) {
+			Integer freq = (uxlist.get(userid)!=null)? uxlist.get(userid) : 0;
+			return freq;
+		}
+		
+	}
+	
+	public static class VocalFriendsAverageReduce extends IdentityReducer<IntWritable, Text> {};
 }

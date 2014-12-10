@@ -131,7 +131,19 @@ public class AnalyzerMain {
 		{"FilterNetwork","GraphAnalysis","FilterNetworkMap","FilterNetworkReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
 			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_TEXT,BALANCED_REDUCE_NUM,PROP_TEXT,PROP_TEXT,DIST_CACHE},
 		{"SimpleFilterNetwork","GraphAnalysis","SimpleFilterNetworkMap","SimpleFilterNetworkReduce"," <input_seqFile_Path> <outputPath>",
-			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_TEXT,BALANCED_REDUCE_NUM}
+			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_TEXT,BALANCED_REDUCE_NUM},
+		{"ReduceCSV","GraphAnalysis","ReduceCSVMap","ReduceCSVReduce"," <input_seqFile_Path> <outputPath>",
+			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_TEXT,BALANCED_REDUCE_NUM},
+		{"Simplify","GraphAnalysis","SimplifyNetworkMap","SimplifyNetworkReduce"," <input_seqFile_Path> <outputPath>",
+			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_LONG,PROP_TEXT,BALANCED_REDUCE_NUM,PROP_LONG,PROP_TEXT},
+		{"SimplifyAll","GraphAnalysis","SimplifyAllMap","SimplifyAllReduce"," <input_seqFile_Path> <outputPath>",
+			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_LONG,PROP_TEXT,BALANCED_REDUCE_NUM,PROP_LONG,PROP_TEXT},
+		{"DistTest","GraphAnalysis","DistCacheTestMap","DistCacheTestReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM,PROP_LONG,PROP_INT,DIST_CACHE},
+		{"VFAttitude","GraphAnalysis","LocalMajorityByAttitudeMap","LocalMajorityByAttitudeReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_DOUBLE,SINGLE_REDUCE_NUM,PROP_INT,PROP_DOUBLE,DIST_CACHE},
+		{"VFAverage","GraphAnalysis","VocalFriendsAverageMap","VocalFriendsAverageReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT,DIST_CACHE}
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。

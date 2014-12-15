@@ -140,7 +140,9 @@ public class AnalyzerMain {
 			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_LONG,PROP_TEXT,BALANCED_REDUCE_NUM,PROP_LONG,PROP_TEXT},
 		{"DistTest","GraphAnalysis","DistCacheTestMap","DistCacheTestReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM,PROP_LONG,PROP_INT,DIST_CACHE},
-		{"VFAttitude","GraphAnalysis","LocalMajorityByAttitudeMap","LocalMajorityByAttitudeReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
+		{"VFAttitude","GraphAnalysis","VocalFriendsAttitudeMap","VocalFriendsAttitudeReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_DOUBLE,SINGLE_REDUCE_NUM,PROP_INT,PROP_DOUBLE,DIST_CACHE},
+		{"VFAttAvg","GraphAnalysis","VocalFriendsAttitudeMap","VocalFriendsAttitudeAverageReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_DOUBLE,SINGLE_REDUCE_NUM,PROP_INT,PROP_DOUBLE,DIST_CACHE},
 		{"VFAverage","GraphAnalysis","VocalFriendsAverageMap","VocalFriendsAverageReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT,DIST_CACHE}

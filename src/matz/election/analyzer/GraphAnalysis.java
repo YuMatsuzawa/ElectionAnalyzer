@@ -437,7 +437,7 @@ public class GraphAnalysis {
 	 * @author YuMatsuzawa
 	 *
 	 */
-	public static class LocalMajorityByAttitudeMap extends MapReduceBase implements Mapper<Text, Text, IntWritable, DoubleWritable> {
+	public static class VocalFriendsAttitudeMap extends MapReduceBase implements Mapper<Text, Text, IntWritable, DoubleWritable> {
 		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
 		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
 		
@@ -509,7 +509,24 @@ public class GraphAnalysis {
 		
 	}
 	
-	public static class LocalMajorityByAttitudeReduce extends IdentityReducer<IntWritable, DoubleWritable> {};
+	public static class VocalFriendsAttitudeReduce extends IdentityReducer<IntWritable, DoubleWritable> {};
+
+	public static class VocalFriendsAttitudeAverageReduce extends MapReduceBase implements Reducer<IntWritable, DoubleWritable, IntWritable, DoubleWritable> {
+		private DoubleWritable avgRatio = new DoubleWritable(0.0);
+		@Override
+		public void reduce(IntWritable key, Iterator<DoubleWritable> values,
+				OutputCollector<IntWritable, DoubleWritable> output,
+				Reporter reporter) throws IOException {
+			double denom = 0.0, numer = 0.0;
+			while (values.hasNext()) {
+				denom += 1.0;
+				numer += values.next().get();
+			}
+			avgRatio.set(numer/denom);
+			output.collect(key, avgRatio);
+		}
+		
+	}
 	
 	/**UFリストを参照データとし、Vocalユーザ群について、各ユーザのRT数と、そのユーザの周囲のVocalユーザ率をマップする。
 	 * @author YuMatsuzawa

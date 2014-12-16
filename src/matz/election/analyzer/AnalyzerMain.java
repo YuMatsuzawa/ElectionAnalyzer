@@ -128,6 +128,10 @@ public class AnalyzerMain {
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT},
 		{"RTFreq","Retweet","RTFreqMap","RTFreqReduce"," <input_seqFile_Path> <outputPath>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM,PROP_LONG,PROP_INT},
+		{"UserRTList","Retweet","UserRTListMap","UserRTListReduce"," <input_seqFile_Path> <outputPath>",
+			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_LONG,PROP_TEXT,BALANCED_REDUCE_NUM},
+		{"RTOpinion","Retweet","RTOpinionMap","RTOpinionReduce"," <input_seqFile_Path> <outputPath> <rtoplist_path>",
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM,PROP_LONG,PROP_INT,DIST_CACHE},
 		{"FilterNetwork","GraphAnalysis","FilterNetworkMap","FilterNetworkReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
 			PROP_SEQ_INPUT,PROP_SEQ_OUTPUT,PROP_TEXT,PROP_TEXT,BALANCED_REDUCE_NUM,PROP_TEXT,PROP_TEXT,DIST_CACHE},
 		{"SimpleFilterNetwork","GraphAnalysis","SimpleFilterNetworkMap","SimpleFilterNetworkReduce"," <input_seqFile_Path> <outputPath>",
@@ -145,7 +149,9 @@ public class AnalyzerMain {
 		{"VFAttAvg","GraphAnalysis","VocalFriendsAttitudeMap","VocalFriendsAttitudeAverageReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_DOUBLE,SINGLE_REDUCE_NUM,PROP_INT,PROP_DOUBLE,DIST_CACHE},
 		{"VFAverage","GraphAnalysis","VocalFriendsAverageMap","VocalFriendsAverageReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
-			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT,DIST_CACHE}
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT,DIST_CACHE},
+		{"VFOpinion","GraphAnalysis","VocalFriendsOpinionMap","VocalFriendsOpinionReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_DOUBLE,SINGLE_REDUCE_NUM,PROP_INT,PROP_DOUBLE,DIST_CACHE},
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。

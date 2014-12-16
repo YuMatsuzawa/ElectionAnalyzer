@@ -528,7 +528,7 @@ public class GraphAnalysis {
 		
 	}
 	
-	/**UFリストを参照データとし、Vocalユーザ群について、各ユーザのRT数と、そのユーザの周囲のVocalユーザ率をマップする。
+	/**UFリストを参照データとし、Vocalユーザ群について、各ユーザのRT数と、そのユーザの周囲の平均RT数をマップする。
 	 * @author YuMatsuzawa
 	 *
 	 */
@@ -611,4 +611,82 @@ public class GraphAnalysis {
 	}
 	
 	public static class VocalFriendsAverageReduce extends IdentityReducer<IntWritable, Text> {};
+	
+	/**UOリストを読んで、各ユーザの意見と、周囲のヴォーカルユーザの意見の平均値を出力する。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class VocalFriendsOpinionMap extends MapReduceBase implements Mapper<Text, Text, IntWritable, DoubleWritable> {
+		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
+		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
+		
+		private IntWritable op = new IntWritable();
+		private DoubleWritable rates = new DoubleWritable();
+		
+		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param context
+		 */
+		public void configure(JobConf job) {
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(linkname)));
+				String line = "";
+				while((line=br.readLine())!=null) {
+					String[] splits = line.split("\t");
+					Long userid = Long.parseLong(splits[0]);
+					Integer freq = Integer.parseInt(splits[1]);
+					System.out.println(userid);
+					uxlist.put(userid, freq);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<IntWritable, DoubleWritable> output, Reporter reporter)
+				throws IOException {
+			try {
+				User user = TwitterObjectFactory.createUser(key.toString());
+				Long userId = user.getId();
+				if ( uxlist.containsKey(userId) ) { // which means the user is Vocal
+					op.set(uxlist.get(userId));
+					
+					String[] followingList = value.toString().split(",");
+//					int numFollowing = followingList.length;
+					int numVocal = 0;
+					double avgOP = 0.0;
+					for (String followingId : followingList) {
+						try {
+							Long followingIdByLong = Long.valueOf(followingId);
+							if (uxlist.containsKey(followingIdByLong)) {  // which means this followee is Vocal
+								numVocal++;
+								avgOP += uxlist.get(followingIdByLong);
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					double vocalAvgOP = 0.0;
+					if (numVocal > 0) {
+						vocalAvgOP = avgOP / (double) numVocal;
+					}
+					rates.set(vocalAvgOP);
+					output.collect(op, rates);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	public static class VocalFriendsOpinionReduce extends IdentityReducer<IntWritable, DoubleWritable> {};
 }

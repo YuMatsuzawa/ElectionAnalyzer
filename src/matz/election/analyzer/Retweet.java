@@ -3,17 +3,18 @@
  */
 package matz.election.analyzer;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.io.InputStreamReader;
+import java.util.*;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.lib.IdentityReducer;
 
 import twitter4j.Status;
 import twitter4j.TwitterException;
@@ -189,4 +190,105 @@ public class Retweet {
 		}
 		
 	}
+	
+	/**RetweetMapで作った、Base64RTKeyとユーザリストのValのSeqファイルを読んで、そこからユーザごとのBase64RTリストをつくる。<br>
+	 * MapperではユーザをKey，Base64RTをValとして放射する。Reducer/CombinerではValをCSVとして結合する。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class UserRTListMap extends MapReduceBase implements Mapper<Text, Text, LongWritable, Text> {
+		private LongWritable userid = new LongWritable();
+		
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<LongWritable, Text> output, Reporter reporter)
+				throws IOException {
+			String[] splits = value.toString().split(",");
+			for (String split : splits) {
+				Long userLong = Long.valueOf(split);
+				userid.set(userLong);
+				output.collect(userid, key);
+			}
+		}
+	}
+	
+	/**MapperOutputはUserID(LongWritable)-Base64RT(Text)である。ReducerではBase64RTをCSVに結合する。Seqに出力すること。Combinerに使える。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class UserRTListReduce extends MapReduceBase implements Reducer<LongWritable, Text, LongWritable, Text> {
+
+		@Override
+		public void reduce(LongWritable key, Iterator<Text> values,
+				OutputCollector<LongWritable, Text> output, Reporter reporter)
+				throws IOException {
+			String redStr = values.next().toString(); // 1st one.
+			while (values.hasNext()) {
+				redStr += "," + values.next().toString();
+			}
+			output.collect(key, new Text(redStr));
+		}
+		
+	}
+	
+	/**UOリストを作る。UserRTListで作った、ユーザごとのRTリストを基にする。<br>
+	 * Cacheに入れたクラスタ分け済みRTのリストを使う。<br>
+	 * ReducerはIdentityでよい。Text出力、SingleReduce.
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class RTOpinionMap extends MapReduceBase implements Mapper<LongWritable, Text, LongWritable, IntWritable> {
+		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
+		private static HashMap<String, Integer> RTOPList = new HashMap<String, Integer>();
+
+		private static final IntWritable op0 = new IntWritable(0);
+		private static final IntWritable op1 = new IntWritable(1);
+		
+		public void configure(JobConf job) {
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(linkname)));
+				String line = "";
+				while((line=br.readLine())!=null) {
+					String[] splits = line.split("\t");
+					String rt = splits[0];
+					Integer op = Integer.parseInt(splits[1]);
+					System.out.println(rt);
+					RTOPList.put(rt, op);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+		}
+
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<LongWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			String[] RTs = value.toString().split(",");
+			int count0 = 0, count1 = 0;
+			for (String RT : RTs) { // base64encoded.
+				byte[] byteRT = Base64.decodeBase64(RT);
+				String decodedRT = new String(byteRT);
+				Integer OP = RTOPList.get(decodedRT); 
+				if (OP != null && OP == 0) count0++;
+				else if (OP != null && OP == 1) count1++;
+			}
+			
+			if (count0 > 0 || count1 > 0) {
+				if (count0 > count1) output.collect(key, op0);
+				if (count0 < count1) output.collect(key, op1);
+			}
+		}
+		
+	}
+	
+	public static class RTOpinionReduce extends IdentityReducer<LongWritable, IntWritable> {};
 }

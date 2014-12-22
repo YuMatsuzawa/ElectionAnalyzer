@@ -689,4 +689,67 @@ public class GraphAnalysis {
 	}
 	
 	public static class VocalFriendsOpinionReduce extends IdentityReducer<IntWritable, DoubleWritable> {};
+	
+	/**ユーザの次数（入次数＝#followed）を、意見ごとにカウントするマップ。Silentユーザはop=-1としてこれも計上する。<br>
+	 * #followingは必要としていないので、BigCSVのネットワークデータを使ってよい。
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class VocalDegreeMap extends MapReduceBase implements Mapper<Text, Text, IntWritable, IntWritable> {
+		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
+		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
+		
+		private IntWritable op = new IntWritable();
+		private IntWritable inDegree = new IntWritable();
+		
+		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param context
+		 */
+		public void configure(JobConf job) {
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(linkname)));
+				String line = "";
+				while((line=br.readLine())!=null) {
+					String[] splits = line.split("\t");
+					Long userid = Long.parseLong(splits[0]);
+					Integer freq = Integer.parseInt(splits[1]);
+					System.out.println(userid);
+					uxlist.put(userid, freq);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<IntWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			try {
+				User user = TwitterObjectFactory.createUser(key.toString());
+				Long userid = user.getId();
+				Integer opInt = uxlist.get(userid);
+				if (opInt == null) opInt = -1;
+				op.set(opInt);
+				String[] csvStr = value.toString().split(",");
+				int numFollowed = Integer.valueOf(csvStr[1]);
+				if(numFollowed >= 0) {
+					inDegree.set(numFollowed);
+					output.collect(op, inDegree);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	public static class VocalDegreeReduce extends IdentityReducer<IntWritable, IntWritable> {};
 }

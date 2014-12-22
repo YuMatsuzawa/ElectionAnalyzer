@@ -152,6 +152,8 @@ public class AnalyzerMain {
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT,DIST_CACHE},
 		{"VFOpinion","GraphAnalysis","VocalFriendsOpinionMap","VocalFriendsOpinionReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_DOUBLE,SINGLE_REDUCE_NUM,PROP_INT,PROP_DOUBLE,DIST_CACHE},
+		{"VDegree","GraphAnalysis","VocalDegreeMap","VocalDegreeReduce"," <input_seqFile_Path>(BigCSV ntwk) <outputPath> <uxlist_Path>",
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_INT,SINGLE_REDUCE_NUM,PROP_INT,PROP_INT,DIST_CACHE},
 	};
 	
 	/**引数が不正・不足の際に使用する、ジョブリストと使用方法を出力するメソッド。

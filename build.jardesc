@@ -11,9 +11,19 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
-        <file path="/ElectionAnalyzer/lib/jsoup-1.8.1.jar"/>
         <file path="/ElectionAnalyzer/lib/commons-codec-1.10.jar"/>
+        <file path="/ElectionAnalyzer/lib/jsoup-1.8.1-sources.jar"/>
+        <file path="/ElectionAnalyzer/.gitignore"/>
+        <file path="/ElectionAnalyzer/README.md"/>
+        <folder path="/ElectionAnalyzer/.settings"/>
+        <file path="/ElectionAnalyzer/build.jardesc"/>
+        <file path="/ElectionAnalyzer/lib/jsoup-1.8.1.jar"/>
+        <file path="/ElectionAnalyzer/.classpath"/>
+        <file path="/ElectionAnalyzer/sampleTweetLog.txt"/>
+        <file path="/ElectionAnalyzer/queries.txt"/>
+        <file path="/ElectionAnalyzer/lib/.gitignore"/>
         <file path="/ElectionAnalyzer/lib/twitter4j-core-4.0.2.jar"/>
+        <file path="/ElectionAnalyzer/.project"/>
         <javaElement handleIdentifier="=ElectionAnalyzer/src"/>
     </selectedElements>
 </jardesc>

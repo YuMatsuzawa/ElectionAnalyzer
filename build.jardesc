@@ -15,7 +15,6 @@
         <file path="/ElectionAnalyzer/lib/jsoup-1.8.1-sources.jar"/>
         <file path="/ElectionAnalyzer/.gitignore"/>
         <file path="/ElectionAnalyzer/README.md"/>
-        <folder path="/ElectionAnalyzer/.settings"/>
         <file path="/ElectionAnalyzer/build.jardesc"/>
         <file path="/ElectionAnalyzer/lib/jsoup-1.8.1.jar"/>
         <file path="/ElectionAnalyzer/.classpath"/>

@@ -752,4 +752,64 @@ public class GraphAnalysis {
 	}
 	
 	public static class VocalDegreeReduce extends IdentityReducer<IntWritable, IntWritable> {};
+	
+	/**シミュレーションに投入するためのサンプルネットワーク取得の元データを生成するMapR．出力はUserIDをKey，CSVをValueにもつ．ユーザプロファイルは使用しないので消すということになる．<br>
+	 * Cacheにフィルタリストを読み込み，そのリストに載っているユーザのみ抽出する．
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class DropProfileAndFilterMap extends MapReduceBase implements Mapper<Text, Text, Text, Text> {
+//		private final static int USERID_INDEX = 0, NUM_FOLLOWED_INDEX = 1, NUM_FOLLOWING_INDEX = 2;
+		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
+		private static final int followLimit = 2000;
+		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
+
+		private Text userid = new Text();
+		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにcacheを取り込む。
+		 * @param context
+		 */
+		public void configure(JobConf job) {
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(linkname)));
+				String line = "";
+				while((line=br.readLine())!=null) {
+					String[] splits = line.split("\t");
+					Long userid = Long.parseLong(splits[0]);
+					Integer freq = Integer.parseInt(splits[1]);
+//					System.out.println(userid);
+					uxlist.put(userid, freq);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		@Override
+		public void map(Text key, Text value,
+				OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			User user = null;
+			try {
+				user = TwitterObjectFactory.createUser(key.toString());
+				if (user.getFriendsCount() < followLimit && uxlist.containsKey(user.getId())) { //followLimitによるフィルタ
+//					String[] csv = value.toString().split(",");
+//					if (csv[NUM_FOLLOWED_INDEX].equals("-1") || csv[NUM_FOLLOWING_INDEX].equals("-1")) return; //鍵付きユーザ除外→あとでやる
+					
+					userid.set(String.valueOf(user.getId()));
+					output.collect(userid, value);
+				}
+			} catch(Exception e) {
+				
+			}
+		}
+	}
+	
+	public static class DropProfileAndFilterReduce extends IdentityReducer<Text, Text> {};
 }

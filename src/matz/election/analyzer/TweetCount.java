@@ -7,6 +7,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.lib.IdentityReducer;
 
 import twitter4j.Status;
 import twitter4j.TwitterException;
@@ -58,12 +59,10 @@ public class TweetCount {
 		public void map(LongWritable key, Text value,
 				OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
-			if (key.get()!=0) {
+			if (key.get() != 0) {
 				userid.set(key.toString());
-			} else {
-				userid.set("unparsable_user");
+				output.collect(userid, one);
 			}
-			output.collect(userid, one);
 		}
 		
 	}
@@ -213,4 +212,41 @@ public class TweetCount {
 		}
 		
 	}
+	
+	/**User-TweetCountリストに閾値を当てる．ReducerはIdentityでいい．
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class FilterUserTweetCountMap extends MapReduceBase implements Mapper<LongWritable, Text, LongWritable, IntWritable> {
+		private static int threshold = 10;
+		private LongWritable userid = new LongWritable();
+		private IntWritable count = new IntWritable();
+
+		public void configure(JobConf job) {
+			String extraArg = job.get("arg3");
+			if (extraArg != null) {
+				try {
+					threshold = Integer.parseInt(extraArg);
+				} catch (NumberFormatException e) {
+					//do nothing. default value will be kept.
+				}
+			}
+		};
+
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<LongWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			String[] pair = value.toString().split("\t");
+			Long useridLong = Long.parseLong(pair[0]);
+			Integer countInt = Integer.parseInt(pair[1]);
+			if (countInt > threshold) {
+				userid.set(useridLong);
+				count.set(countInt);
+				output.collect(userid, count);
+			}
+		}
+	}
+	
+	public static class FilterUserTweetCountReduce extends IdentityReducer<LongWritable, IntWritable> {};
 }

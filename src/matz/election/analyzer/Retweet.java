@@ -233,7 +233,10 @@ public class Retweet {
 	
 	/**UOリストを作る。UserRTListで作った、ユーザごとのRTリストを基にする。<br>
 	 * Cacheに入れたクラスタ分け済みRTのリストを使う。<br>
-	 * ReducerはIdentityでよい。Text出力、SingleReduce.
+	 * ReducerはIdentityでよい。Text出力、SingleReduce.<br>
+	 * 【備考】UserRTListの出力ファイルには，約10万ユーザ（3000人強x30ファイル）分のリストが含まれていた．(/user/matsuzawa/user-rt/)<br>
+	 * 一方，このMapRによって生成されたUOリストには5万3千ユーザの2値化された意見が登録されている．(/user/matsuzawa/uolist/uo_100.tsv)<br>
+	 * 即ち，このMapperのフィルタ処理によって，ヴォーカルユーザと見なされていたユーザの約半数が意見判定不可能（⇒見かけ上サイレント）とされたことになる．
 	 * @author YuMatsuzawa
 	 *
 	 */
@@ -282,7 +285,7 @@ public class Retweet {
 				else if (OP != null && OP == 1) count1++;
 			}
 			
-			if (count0 > 0 || count1 > 0) {
+			if (count0 > 0 || count1 > 0) { //RT-opリストにマップ済みの意見をいずれか1つ以上RTしているヴォーカルユーザを，意見の2値化が可能なヴォーカルユーザとみなしている．
 				if (count0 > count1) output.collect(key, op0);
 				if (count0 < count1) output.collect(key, op1);
 			}

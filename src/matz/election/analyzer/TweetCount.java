@@ -59,9 +59,18 @@ public class TweetCount {
 		public void map(LongWritable key, Text value,
 				OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
-			if (key.get() != 0) {
+			/*if (key.get() != 0) {
 				userid.set(key.toString());
 				output.collect(userid, one);
+			}*/
+			Status tweet = null;
+			try {
+				tweet = TwitterObjectFactory.createStatus(value.toString());
+				Long useridLong = tweet.getUser().getId();
+				userid.set(useridLong.toString());
+				output.collect(userid, one);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 		

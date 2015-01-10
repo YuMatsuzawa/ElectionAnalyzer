@@ -806,7 +806,7 @@ public class GraphAnalysis {
 					output.collect(userid, value);
 				}
 			} catch(Exception e) {
-				
+				e.printStackTrace();
 			}
 		}
 	}

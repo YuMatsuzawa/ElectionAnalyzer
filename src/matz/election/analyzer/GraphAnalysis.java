@@ -691,11 +691,11 @@ public class GraphAnalysis {
 	public static class VocalFriendsOpinionReduce extends IdentityReducer<IntWritable, DoubleWritable> {};
 	
 	/**ユーザの次数（入次数＝#followed）を、意見ごとにカウントするマップ。Silentユーザはop=-1としてこれも計上する。<br>
-	 * #followingは必要としていないので、BigCSVのネットワークデータを使ってよい。
+	 * political_noprofileネットワークを使うほうが多分いい．Text形式で，Profileはなく，KeyにユーザID，ValにCSVが入っている．
 	 * @author YuMatsuzawa
 	 *
 	 */
-	public static class VocalDegreeMap extends MapReduceBase implements Mapper<Text, Text, IntWritable, IntWritable> {
+	public static class VocalDegreeMap extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, IntWritable> {
 		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
 		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
 		
@@ -729,16 +729,19 @@ public class GraphAnalysis {
 		}
 
 		@Override
-		public void map(Text key, Text value,
+		public void map(LongWritable key, Text value,
 				OutputCollector<IntWritable, IntWritable> output,
 				Reporter reporter) throws IOException {
 			try {
-				User user = TwitterObjectFactory.createUser(key.toString());
-				Long userid = user.getId();
+//				User user = TwitterObjectFactory.createUser(key.toString());
+//				Long userid = user.getId();
+				String[] split = value.toString().split("\t");
+				Long userid = Long.valueOf(split[0]);
 				Integer opInt = uxlist.get(userid);
 				if (opInt == null) opInt = -1;
+				
 				op.set(opInt);
-				String[] csvStr = value.toString().split(",");
+				String[] csvStr = split[1].toString().split(",");
 				int numFollowed = Integer.valueOf(csvStr[1]);
 				if(numFollowed >= 0) {
 					inDegree.set(numFollowed);
@@ -751,7 +754,90 @@ public class GraphAnalysis {
 		
 	}
 	
-	public static class VocalDegreeReduce extends IdentityReducer<IntWritable, IntWritable> {};
+	/**結果をFreqに変えておく．Excelの頻度分布は低機能のため．
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class VocalDegreeReduce extends MapReduceBase implements Reducer<IntWritable, IntWritable, IntWritable, Text>{
+		private TreeMap<Integer,Integer> freqMap = null;
+		
+		@Override
+		public void reduce(IntWritable key, Iterator<IntWritable> values,
+				OutputCollector<IntWritable, Text> output, Reporter reporter)
+				throws IOException {
+			freqMap = new TreeMap<Integer,Integer>();
+			while (values.hasNext()) {
+				Integer degreeKey = values.next().get();
+				if (freqMap.containsKey(degreeKey)) {
+					int freqCount = freqMap.get(degreeKey);
+					freqMap.put(degreeKey, ++freqCount);
+				} else {
+					freqMap.put(degreeKey, 1);
+				}
+			}
+			for (Entry<Integer,Integer> freqEntry : freqMap.entrySet()) {
+				String outVal = freqEntry.getKey().toString() + "\t" + freqEntry.getValue().toString();
+				output.collect(key, new Text(outVal));
+			}
+		}
+		
+	}
+	
+	/**ネットワーク全体での次数分布を表示するためのMapper
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class TotalDegreeMap extends MapReduceBase implements Mapper<LongWritable,Text,IntWritable,IntWritable> {
+		private IntWritable op = new IntWritable(1);
+		private IntWritable inDegree = new IntWritable();
+		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<IntWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			try {
+				String[] split = value.toString().split("\t");
+				String[] csvStr = split[1].toString().split(",");
+				
+				int numFollowed = Integer.valueOf(csvStr[1]);
+				if(numFollowed >= 0) {
+					inDegree.set(numFollowed);
+					output.collect(op, inDegree);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	/**ネットワーク全体での次数分布を表示するためのReducer
+	 * @author YuMatsuzawa
+	 *
+	 */
+	public static class TotalDegreeReduce extends MapReduceBase implements Reducer<IntWritable, IntWritable, IntWritable, Text> {
+		private static TreeMap<Integer,Integer> totalFreqMap = new TreeMap<Integer,Integer>();
+		
+		@Override
+		public void reduce(IntWritable key, Iterator<IntWritable> values,
+				OutputCollector<IntWritable, Text> output, Reporter reporter)
+				throws IOException {
+			while (values.hasNext()) {
+				Integer degreeKey = values.next().get();
+				if (totalFreqMap.containsKey(degreeKey)) {
+					int freqCount = totalFreqMap.get(degreeKey);
+					totalFreqMap.put(degreeKey, ++freqCount);
+				} else {
+					totalFreqMap.put(degreeKey, 1);
+				}
+			}
+			for (Entry<Integer,Integer> freqEntry : totalFreqMap.entrySet()) {
+				String outVal = freqEntry.getKey().toString() + "\t" + freqEntry.getValue().toString();
+				output.collect(key, new Text(outVal));
+			}
+		}
+		
+	}
 	
 	/**シミュレーションに投入するためのサンプルネットワーク取得の元データを生成するMapR．出力はUserIDをKey，CSVをValueにもつ．ユーザプロファイルは使用しないので消すということになる．<br>
 	 * Cacheにフィルタリストを読み込み，そのリストに載っているユーザのみ抽出する．

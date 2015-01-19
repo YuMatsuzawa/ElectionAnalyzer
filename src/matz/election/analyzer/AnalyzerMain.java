@@ -154,8 +154,10 @@ public class AnalyzerMain {
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_TEXT,DIST_CACHE},
 		{"VFOpinion","GraphAnalysis","VocalFriendsOpinionMap","VocalFriendsOpinionReduce"," <input_seqFile_Path> <outputPath> <uxlist_Path>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_DOUBLE,SINGLE_REDUCE_NUM,PROP_INT,PROP_DOUBLE,DIST_CACHE},
-		{"VDegree","GraphAnalysis","VocalDegreeMap","VocalDegreeReduce"," <input_seqFile_Path>(BigCSV ntwk) <outputPath> <uxlist_Path>",
-			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_INT,SINGLE_REDUCE_NUM,PROP_INT,PROP_INT,DIST_CACHE},
+		{"VDegree","GraphAnalysis","VocalDegreeMap","VocalDegreeReduce"," <input_textFile_Path>(Filtered ntwk with no profile) <outputPath> <uxlist_Path>",
+			PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,"3",PROP_INT,PROP_INT,DIST_CACHE},
+		{"TotalVDegree","GraphAnalysis","TotalDegreeMap","TotalDegreeReduce"," <input_textFile_Path>(Filtered ntwk with no profile) <outputPath>",
+			PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_INT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_INT,PROP_INT},
 		{"DropFilter","GraphAnalysis","DropProfileAndFilterMap","DropProfileAndFilterReduce"," <input_seqFile_Path>(BigCSV ntwk) <outputPath> <cache_path>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_TEXT,PROP_TEXT,DIST_CACHE},
 	};

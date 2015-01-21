@@ -84,6 +84,8 @@ public class AnalyzerMain {
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_TEXT,BALANCED_REDUCE_NUM,PROP_LONG,PROP_INT},
 		{"TimeFreq","TweetCount","CreatedAtFreqMap","CreatedAtFreqReduce"," <input_seqFile_Path> <outputPath>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_LONG,PROP_INT},
+		{"OriginalTimeFreq","TweetCount","OriginalCreatedAtFreqMap","CreatedAtFreqReduce"," <input_seqFile_Path> <outputPath>",
+			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_TEXT,SINGLE_REDUCE_NUM,PROP_LONG,PROP_INT},
 		{"RetweetCount","TweetCount","RetweetMap","LongIntReduce"," <input_seqFile_Path> <outputPath>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM},
 		{"RetweetFreq","TweetCount","RetweetFreqMap","IntIntReduce"," <input_textFile_Path> <outputPath>",

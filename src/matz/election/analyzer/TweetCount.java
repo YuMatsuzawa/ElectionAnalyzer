@@ -175,6 +175,40 @@ public class TweetCount {
 		}
 	}
 	
+	public static class OriginalCreatedAtFreqMap extends MapReduceBase implements Mapper<LongWritable, Text, LongWritable, IntWritable> {
+		private static long july27sec = 1374850800;
+		private static long oneDayInMillisec = 86400000;
+		private LongWritable mark = new LongWritable();
+		private static IntWritable one = new IntWritable(1);
+		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<LongWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			Status tweet;
+			try {
+				tweet = TwitterObjectFactory.createStatus(value.toString());
+				if (tweet.isRetweet()) return;
+				long dateLong = tweet.getCreatedAt().getTime();
+				long minRange = july27sec * 1000, maxRange = minRange + oneDayInMillisec;
+				int pitch = 31;
+				for (int i = 0; i < pitch; i++) {
+					if (minRange <= dateLong && dateLong < maxRange) {
+						mark.set(minRange);
+						output.collect(mark, one);
+						return;
+					} else {
+						maxRange = minRange;
+						minRange -= oneDayInMillisec;
+					}
+				}
+				output.collect(mark, one);
+			} catch (TwitterException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	public static class CreatedAtFreqReduce extends MapReduceBase implements Reducer<LongWritable, IntWritable, LongWritable, Text> {
 
 		@Override

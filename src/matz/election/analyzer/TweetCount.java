@@ -1,6 +1,7 @@
 package matz.election.analyzer;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Iterator;
 
 import org.apache.hadoop.io.IntWritable;
@@ -108,23 +109,84 @@ public class TweetCount {
 	 *
 	 */
 	public static class TimeStampMap extends MapReduceBase implements Mapper<LongWritable, Text, LongWritable, IntWritable> {
-		private static final IntWritable one = new IntWritable(1);
+		private static IntWritable one = new IntWritable(1);
 		private LongWritable dateLong = new LongWritable();
 		@Override
 		public void map(LongWritable key, Text value,
 				OutputCollector<LongWritable, IntWritable> output, Reporter reporter)
 				throws IOException {
+			Status tweet;
 			try {
-				Status tweet = TwitterObjectFactory.createStatus(value.toString());
-//				long timeStampInSecond = tweet.getCreatedAt().toString();
-//				Date dateInSecond = new Date(timeStampInSecond*1000);
+				tweet = TwitterObjectFactory.createStatus(value.toString());
 				dateLong.set(tweet.getCreatedAt().getTime());
 				output.collect(dateLong, one);
 			} catch (TwitterException e) {
-				//do nothing
-			} catch (Exception e) {
-				//do nothing
+				e.printStackTrace();
 			}
+		}
+	}
+	
+	public static class TimeStampReduce extends MapReduceBase implements Reducer<LongWritable, IntWritable, LongWritable, Text> {
+
+		@Override
+		public void reduce(LongWritable key, Iterator<IntWritable> values,
+				OutputCollector<LongWritable, Text> output, Reporter reporter)
+				throws IOException {
+			Date date = new Date(key.get());
+			int count = 0;
+			while(values.hasNext()) {
+				count += values.next().get();
+			}
+			output.collect(key, new Text(date.toString() + "\t" + count));
+		}
+		
+	}
+	
+	public static class CreatedAtFreqMap extends MapReduceBase implements Mapper<LongWritable, Text, LongWritable, IntWritable> {
+		private static long july27sec = 1374850800;
+		private static long oneDayInMillisec = 86400000;
+		private LongWritable mark = new LongWritable();
+		private static IntWritable one = new IntWritable(1);
+		
+		@Override
+		public void map(LongWritable key, Text value,
+				OutputCollector<LongWritable, IntWritable> output,
+				Reporter reporter) throws IOException {
+			Status tweet;
+			try {
+				tweet = TwitterObjectFactory.createStatus(value.toString());
+				long dateLong = tweet.getCreatedAt().getTime();
+				long minRange = july27sec * 1000, maxRange = minRange + oneDayInMillisec;
+				int pitch = 31;
+				for (int i = 0; i < pitch; i++) {
+					if (minRange <= dateLong && dateLong < maxRange) {
+						mark.set(minRange);
+						output.collect(mark, one);
+						return;
+					} else {
+						maxRange = minRange;
+						minRange -= oneDayInMillisec;
+					}
+				}
+				output.collect(mark, one);
+			} catch (TwitterException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public static class CreatedAtFreqReduce extends MapReduceBase implements Reducer<LongWritable, IntWritable, LongWritable, Text> {
+
+		@Override
+		public void reduce(LongWritable key, Iterator<IntWritable> values,
+				OutputCollector<LongWritable, Text> output, Reporter reporter)
+				throws IOException {
+			Date date = new Date(key.get());
+			int count = 0;
+			while(values.hasNext()) {
+				count += values.next().get();
+			}
+			output.collect(key, new Text(date.toString() + "\t" + count));
 		}
 	}
 	

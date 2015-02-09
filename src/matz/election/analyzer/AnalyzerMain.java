@@ -62,9 +62,8 @@ public class AnalyzerMain {
 			PROP_INDEX_MAPPER_KEY_CLASS = 10, PROP_INDEX_MAPPER_VALUE_CLASS = 11, PROP_INDEX_DIST_CACHE = 12;
 	
 	
-	/**使用可能なジョブについての情報を保持する2次元配列。<br>
-	 * ジョブは適当な名前をつけ、同一パッケージのクラス内に使用するMapper/Reducerをサブクラスとして定義する。<br>
-	 * 本配列内にジョブ名、定義クラス、使用するMapper名、Reducer名、引数、入力ファイルフォーマット、出力ファイルフォーマット、出力Key形式、出力Value形式、Reducer数をStringで記述する。<br>
+	/**使用可能なジョブについての情報を保持する2次元配列。ジョブは適当な名前をつける。<br>
+	 * 本配列内にジョブ名、Mapper/Reducerの定義クラス、使用するMapper名、Reducer名、引数、入力ファイルフォーマット、出力ファイルフォーマット、出力Key形式、出力Value形式、Reducer数をStringで記述する。<br>
 	 * Mapper出力の形式とReducer出力の形式が異なる場合は、Mapperの出力クラスを末尾に記述する。この指定がある場合はCombinerが定義されない。<br>
 	 * さらにその後に、DistributedCacheで配布するファイルが有る場合は、DIST_CACHEを付与する。<br>
 	 * main関数内で、本配列に登録された各種クラスを名前引きでロードし、jobインスタンスに投入、job実行する。

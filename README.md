@@ -17,20 +17,56 @@ Eclipse Luna(4.4.0)で作業を行ったプロジェクトです．Eclipse上で
 
 なんにせよ必要なクラスを提供するライブラリがきちんとビルドパスに含まれていれば，Eclipse上でビルドしながら作業はできます．
 
+## 使用方法
+
 クラスタ上で実行するためには、jarファイルに固めてゲートウェイのホームフォルダにアップロードし、
 
-``hadoop jar <path>/<jarfilename>.jar [argument]``
+``$ hadoop jar <path>/<jarfilename>.jar [argument]``
 
-とします。argumentにはクラス内で規定した引数（MapReduceジョブ指定子）パターンを入力します。
-本クラスではJOB_PROPテーブル内で有効なパターンが指定されています。
+とします。argumentにはAnalyzerMainクラス内で規定したMapReduceジョブの指定パターンを入力します。JOB_PROPテーブル内で有効なパターンが指定されています。
+
+例えば、UserTweetCountというMapRジョブであれば、
+
+``$ hadoop jar ~/lib/ElectionAnalyzer.jar UserTweetCount /user/data/Political2013july/ /user/matsuzawa/utc/1/``
+
+以上のように入力し、実行します。ジョブ名のあとは入力データのパス名、出力先パス名です。
+ジョブ名のあとにはいくつでもコマンドライン引数を追加可能ですが、最初の2つは必ず入力データパス、出力パスと解釈されます。
+その後の引数はarg3,arg4,...と命名され、JobConfオブジェクト経由でMapper/Reducer内からアクセス可能です。
+
 argumentを入力せずにコマンド実行することで、パターンリストが表示されます。
 詳細な利用法は各Mapper/Reducerのソース内コメントあるいは以下のdocを参照して下さい。
 
-新たなジョブのためのMapper/Reducerを作成した場合は、JOB_PROPテーブルにそのMapRを使用するためのジョブを登録して下さい。
-JOB_PROP要素の書き方はdoc内に
+新たなジョブのためのMapper/Reducerを作成した場合は、JOB_PROPテーブルにそのMapRを使用するためのジョブ情報を登録して下さい。
+必要なジョブ情報は、
 
-コマンドライン引数argumentの個数はクラスごとに指定できます。
+* ジョブ名
+* Mapper/Reducerの定義クラス
+* 使用するMapper名
+* Reducer名
+* 引数説明
+* 入力ファイルフォーマット
+* 出力ファイルフォーマット
+* 出力Key形式
+* 出力Value形式
+* Reducer数
 
+以上を基本とします。さらに加えて、
+
+* Mapper出力Key形式
+* Mapper出力Value形式
+* "DistributedCache"
+
+以上をオプションとして追加できます。Mapper出力Key・Value形式は、Mapper出力とReducer出力の変数形式が異なる場合に使用してください。
+例えばMapperはText-IntWritableのペアを放射するが、Reducerはそれを集計した上でText-Textペアで出力する、といった場合です。
+MapRフレームワークの制約上、このようなケースではCombinerが使用不可能ですので、Combinerは定義されません。
+逆に、上記オプションが指定されない場合、指定されたReducerがCombinerとしても定義されることに注意してください。
+Mapper/Reducerの出力形式は同一だがCombinerを明示的に使用したくない場合も、このオプションを利用してください。
+その場合は出力Key/Value形式と同一の内容をMapper出力Key/Value形式として登録します。
+
+"DistributedCache"はDistributedCache機能を利用する場合のオプションです。JOB___PROPでは｀`DIST_CACHE``と表記できます。
+このオプションがある場合、コマンドライン引数の3つめ（本来arg3としてJobConfに渡される引数）が、DistributedCacheに配置するファイルパスとなります。
+
+これらJOB_PROP要素の書き方はdoc内にも記述されています。
 
 
 ## AnalyzerMain

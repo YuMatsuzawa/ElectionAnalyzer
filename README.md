@@ -67,7 +67,7 @@ Mapper/Reducerの出力形式は同一だがCombinerを明示的に使用した�
 "DistributedCache"はDistributedCache機能を利用する場合のオプションです。`JOB_PROP`では`DIST_CACHE`と表記できます。
 このオプションがある場合、コマンドライン引数の3つめ（本来`arg3`として`JobConf`に渡される引数）が、DistributedCacheに配置するファイルパスとなります。
 
-これらJOB_PROP要素の書き方はdoc内にも記述されています。
+これらJOB_PROP要素の書き方はソース内にも記述されています。
 
 ## ビルド（Jarエクスポート）方法
 
@@ -91,20 +91,30 @@ Hadoopクラスタは実行時に必要なクラスを見つけるため、jar�
 もしくは実行時、`$ hadoop jar -libjars`というオプションを付けて必要なライブラリファイルを列挙する方法があります。
 ちょうど通常のJavaプログラム実行時に`$ java -cp`と付けて必要なファイルを列挙するのと同様のやり方です。
 こうすると必要なライブラリファイルが実行時にDistributedCache経由でクラスタに配布されるという仕組みで、CDH4以降はこのやり方が推奨されているようです。
-［参考](http://blog.cloudera.com/blog/2011/01/how-to-include-third-party-libraries-in-your-map-reduce-job/)
+[参考](http://blog.cloudera.com/blog/2011/01/how-to-include-third-party-libraries-in-your-map-reduce-job/)
 
 ## クラスタへのアップロード・実行
 
 詳しくは研究室内資料に残しておきます。簡単に言うと、
 
 1. ゲートウェイの`/home/<user>/`ディレクトリに上記Jarをアップロード。
-2. マスターノードにログインし、`$ hadoop`コマンドを実行。
+2. マスターノードにログインし、`$ hadoop ...`コマンドを実行。
 
 これだけです。ゲートウェイとマスターノードはNFSで`/home`を共有しているため、上記のような手順となります。
 ゲートウェイ自体はHadoopクラスタには含まれていないので、`$ hadoop`コマンドを実行できないことに注意してください。
 
-## クラスリスト
+## ジョブリスト
 
-### AnalyzerMain
+本プロジェクトで実行可能なデータ分析ジョブについて、入力・出力等を中心に説明
 
-ドライバークラス（Hadoopに対するジョブの投入を行うクラス）です．main関数を含み，ElectionAnalyzerパッケージ全体としてのエントリポイントです．
+### TweetCount
+
+``$ hadoop jar <jarname>.jar TweetCount <input_seqFile_Path> <outputPath>``
+
+単にツイート数を数えるジョブ。
+
+|:--|:--|
+|入力|SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）|
+|出力|TextFile形式の集計結果|
+
+

@@ -101,7 +101,7 @@ public class TweetCount {
 		}
 	}
 		
-	/**秒単位で、時刻あたりのツイート数をカウントするMapper。<br>
+	/**ミリ秒単位で、時刻あたりのツイート数をカウントするMapper。<br>
 	 * 例：XXXX/YY/ZZ-AA:BB:CCにV個のツイート。<br>
 	 * ただ、ソートしたい関係上KeyはLongにする。後にデータを使うときに可読カレンダー型にパースせよ。<br>
 	 * SeqFileをInputとする。
@@ -126,6 +126,11 @@ public class TweetCount {
 		}
 	}
 	
+	/**TimeStampMapの出力を集計し、Valueに時刻の可読表現を加えて出力するReducer.
+	 * Combinerは使わない。
+	 * @author Matsuzawa
+	 *
+	 */
 	public static class TimeStampReduce extends MapReduceBase implements Reducer<LongWritable, IntWritable, LongWritable, Text> {
 
 		@Override
@@ -142,6 +147,11 @@ public class TweetCount {
 		
 	}
 	
+	/**2013/7/27を上限として、1ヶ月前までの日次のツイート頻度（＋それ以前の日付のツイート頻度）を数え、頻度分布を出力するためのMapper。
+	 * ツイートのCreatedAt時刻を読み、それが何月何日のツイートかを判定し、該当する日の午前0時のエポックミリ秒をKey,カウント1をValueとして放射する。
+	 * @author Romancer
+	 *
+	 */
 	public static class CreatedAtFreqMap extends MapReduceBase implements Mapper<LongWritable, Text, LongWritable, IntWritable> {
 		private static long july27sec = 1374850800;
 		private static long oneDayInMillisec = 86400000;
@@ -175,6 +185,10 @@ public class TweetCount {
 		}
 	}
 	
+	/**CreatedAtFreqと同様の操作をリツイートでないツイート（オリジナルツイート）に対して行うMapper.
+	 * @author Romancer
+	 *
+	 */
 	public static class OriginalCreatedAtFreqMap extends MapReduceBase implements Mapper<LongWritable, Text, LongWritable, IntWritable> {
 		private static long july27sec = 1374850800;
 		private static long oneDayInMillisec = 86400000;
@@ -209,6 +223,10 @@ public class TweetCount {
 		}
 	}
 	
+	/**CreatedAtFreq/OriginalCreatedAtFreqMapの結果を集計するReducer。
+	 * @author Romancer
+	 *
+	 */
 	public static class CreatedAtFreqReduce extends MapReduceBase implements Reducer<LongWritable, IntWritable, LongWritable, Text> {
 
 		@Override
@@ -248,6 +266,10 @@ public class TweetCount {
 		}
 	}
 	
+	/**リツイート数の頻度を集計するためのMapper。RetweetCountの出力を入力とする。
+	 * @author Romancer
+	 *
+	 */
 	public static class RetweetFreqMap extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, IntWritable> {
 		private static final IntWritable one = new IntWritable(1);
 		

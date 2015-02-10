@@ -288,6 +288,7 @@ public class URLTweet extends matz.election.analyzer.TweetCount {
 		private List<String> excludedKeys = Arrays.asList(excludedKeyArray);
 		
 		private String extraArg = new String();
+		
 		public void configure(JobConf job) {
 			extraArg = job.get("arg3");
 			if (extraArg != null) {

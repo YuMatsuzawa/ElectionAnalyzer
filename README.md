@@ -1,8 +1,11 @@
 # ElectionAnalyzer
+[toc]
+
+## 概要
 
 選挙時期の実データの分析のためのプロジェクト及びパッケージ．
 
-基本的にほとんどのクラスがHadoopのMapReduce v1フレームワークを使用．MapReduce v1については各自で勉強して下さい．
+HadoopのMapReduce v1フレームワークを使用．MapReduce v1については各自で勉強して下さい．
 
 Eclipse Luna(4.4.0)で作業を行ったプロジェクトです．Eclipse上で自動ビルドしながら作業するためには，少なくともHadoop-0.20.2の主要なライブラリをインポートするか,
 あるいはHadoop-0.20.2の主要なライブラリをインポートしたプロジェクトをビルドパスに含めて下さい．（多分この方式がベターです．他のHadoopプロジェクトを作るときにも使えるので．）
@@ -15,7 +18,7 @@ Eclipse Luna(4.4.0)で作業を行ったプロジェクトです．Eclipse上で
 本番環境と折衝しながらデバッグするような準備も一応できるようですが，私はやったことがなく，どの程度のことができるのかもちょっと不明です．
 やってみる場合は「CDH Eclipse」等で検索して出てくるブログやガイドなどを読みながら設定して下さい．
 
-なんにせよ必要なクラスを提供するライブラリがきちんとビルドパスに含まれていれば，Eclipse上でビルドしながら作業はできます．
+なんにせよ必要なクラスを提供するライブラリがきちんとビルドパスに含まれていれば，Eclipse上でエラーチェックしながら作業はできます．
 
 ## 使用方法
 
@@ -85,19 +88,20 @@ MapReduceに関連するクラスを格納しているライブラリを明示�
 `Twitter4j`などの外部ライブラリを使用している場合、Hadoopクラスタが認識できる形でそのライブラリファイルを一緒にアップロードする必要があります。
 いくつか方法がありますが、例えばプロジェクト内に`lib`ディレクトリを用意し、必要なライブラリのJarファイルをそこに収めておいて、
 エクスポートの際に一緒にパッケージしてあげる（エクスポートするリソースの選択時に`lib`ディレクトリにチェックを入れる）という手段があります。
-Hadoopクラスタは実行時に必要なクラスを見つけるため、jar内の`lib`ディレクトリを自動で探索するからです。
+Hadoopクラスタは実行時に必要なクラスを見つけるため、jar内の`lib`サブディレクトリを自動で探索するからです。
 松澤はこの方法を使っているので、本プロジェクトの`lib`ディレクトリにいくつか外部ライブラリのJarが入っています。
 
 もしくは実行時、`$ hadoop jar -libjars`というオプションを付けて必要なライブラリファイルを列挙する方法があります。
 ちょうど通常のJavaプログラム実行時に`$ java -cp`と付けて必要なファイルを列挙するのと同様のやり方です。
 こうすると必要なライブラリファイルが実行時にDistributedCache経由でクラスタに配布されるという仕組みで、CDH4以降はこのやり方が推奨されているようです。
 [参考](http://blog.cloudera.com/blog/2011/01/how-to-include-third-party-libraries-in-your-map-reduce-job/)
+こちらの方法を取る場合はクラスタのホームディレクトリに必要なjarをアップロードして、指定します。
 
 ## クラスタへのアップロード・実行
 
 詳しくは研究室内資料に残しておきます。簡単に言うと、
 
-1. ゲートウェイの`/home/<user>/`ディレクトリに上記Jarをアップロード。
+1. ゲートウェイの`/home/<user>/`ディレクトリ以下に上記Jarをアップロード。
 2. マスターノードにログインし、`$ hadoop ...`コマンドを実行。
 
 これだけです。ゲートウェイとマスターノードはNFSで`/home`を共有しているため、上記のような手順となります。
@@ -107,14 +111,180 @@ Hadoopクラスタは実行時に必要なクラスを見つけるため、jar�
 
 本プロジェクトで実行可能なデータ分析ジョブについて、入力・出力等を中心に説明
 
-### TweetCount
+### 基本的なツイート情報に関するジョブ
+
+データ全体について調べたり、クリーニング等を行うジョブ。
+
+#### TweetCount
 
 ``$ hadoop jar <jarname>.jar TweetCount <input_seqFile_Path> <outputPath>``
 
-単にツイート数を数えるジョブ。
+ツイートデータから総ツイート数を数えるジョブ。
 
-|:--|:--|
-|入力|SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）|
-|出力|TextFile形式の集計結果|
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。Keyは"tweetNum"（`Text`）、Valueはカウント（`IntWritable`）
+
+#### UserTweetCount
+
+``$ hadoop jar <jarname>.jar UserTweetCount <input_seqFile_Path> <outputPath>``
+
+ツイートデータからユーザごとにツイート数を数えるジョブ。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。KeyはUserID（`LongWritable`）、Valueはカウント（`IntWritable`）
+
+#### FilterUTCount
+
+``$ hadoop jar <jarname>.jar FilterUTCount <input_textFile_Path> <outputPath>[ <th>]``
+
+UserTweetCountの結果に閾値を当てはめるジョブ。オプションの第三引数に閾値（int数値）。
+
+* 入力:TextFile形式のUserTweetCount出力のディレクトリ。KeyはUserID（`LongWritable`）、Valueはカウント（`IntWritable`）
+* 出力:TextFile形式の集計結果。KeyはUserID（`LongWritable`）、Valueは閾値以上のツイート数を持つユーザのカウント（`IntWritable`）
+
+#### UserCount
+
+``$ hadoop jar <jarname>.jar UserCount <input_textFile_Path> <outputPath>``
+
+UserTweetCountの結果から、ユーザの総数を数え、かつツイート数ごとのユーザ数頻度を算出するジョブ。
+
+* 入力:TextFile形式のUserTweetCount出力のディレクトリ。KeyはUserID（`LongWritable`）、Valueはカウント（`IntWritable`）
+* 出力:TextFile形式の集計結果。Keyはツイート数あるいは"userNum"（`Text`）、Valueはカウント（`IntWritable`）
+
+#### TimeSeries
+
+``$ hadoop jar <jarname>.jar TimeSeries <input_seqFile_Path> <outputPath>``
+
+ツイートデータから、時刻ごとのツイート数を数えるジョブ。時刻はミリ秒。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueはカウント（`IntWritable`）
+
+#### TimeStamp
+
+``$ hadoop jar <jarname>.jar TimeStamp <input_seqFile_Path> <outputPath>``
+
+ツイートデータから、時刻ごとのツイート数を数えるジョブ。時刻はミリ秒。出力に時刻の可読表現を加える。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
+
+#### TimeFreq
+
+``$ hadoop jar <jarname>.jar TimeFreq <input_seqFile_Path> <outputPath>``
+
+ツイートデータから、2013/7/27からさかのぼって1日ごとのツイート数を数えるジョブ。時刻はミリ秒。出力に時刻の可読表現を加える。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
+
+#### OriginalTimeFreq
+
+``$ hadoop jar <jarname>.jar OriginalTimeFreq <input_seqFile_Path> <outputPath>``
+
+ツイートデータから、2013/7/27からさかのぼって1日ごとのツイート数を数えるジョブ。リツイートを除く。時刻はミリ秒。出力に時刻の可読表現を加える。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
+
+#### RetweetCount
+
+``$ hadoop jar <jarname>.jar RetweetCount <input_seqFile_Path> <outputPath>``
+
+ツイートデータから、任意のリツイートについて、それぞれのリツイート数を数えるジョブ。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
+
+#### RetweetFreq
+
+``$ hadoop jar <jarname>.jar RetweetFreq <input_textFile_Path> <outputPath>``
+
+RetweetCountの結果から、リツイート数の頻度分布を作成するジョブ。
+
+* 入力:TextFile形式のRetweetCountの集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
+* 出力:TextFile形式の集計結果。Keyはリツイート数（`IntWritable`）、Valueは頻度（`IntWritable`）
+
+#### PoliticalTweet
+
+``$ hadoop jar <jarname>.jar PoliticalTweet <input_seqFile_Path> <outputPath>``
+
+ツイートデータから、政治・選挙関連単語による絞り込みを行い、同形式のツイートデータで再度出力するジョブ。
+データ収集時、
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 
 
+
+
+### URLによるツイートクラスタリング関係のジョブ
+
+論文2.4.1項の分析のためのデータ集計ジョブ。
+
+#### URLCount
+
+``$ hadoop jar <jarname>.jar URLCount <input_seqFile_Path> <outputPath>``
+
+ツイートデータから、言及されたURLと、URLごとの言及数を数えるジョブ。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
+
+#### URLFreq
+
+``$ hadoop jar <jarname>.jar URLJoin <input_textFile_Path> <outputPath>``
+
+URLCountの出力から、URL言及の頻度分布を出力するジョブ。
+
+* 入力:TextFile形式のURLCountの集計結果。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
+* 出力:TextFile形式の集計結果。Keyは言及数（`IntWritable`）、Valueは頻度（`IntWritable`）
+
+#### BuzzExtract
+
+``$ hadoop jar <jarname>.jar BuzzExtract <input_textFile_Path> <outputPath> [<buzzThreshold>]``
+
+URLCountの出力から、閾値以上の回数言及されたURLを、言及回数ごとにCSVでまとめるジョブ。オプション引数で閾値指定。
+
+* 入力:TextFile形式のURLCountの集計結果。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
+* 出力:TextFile形式の集計結果。Keyは言及数（`IntWritable`）、Valueは当該回数言及されたURLのCSVリスト（`Text`）
+
+#### BuzzURLExpand
+
+``$ hadoop jar <jarname>.jar BuzzURLExpand <input_textFile_Path> <outputPath>``
+
+BuzzExtractの出力を読み、ValueのCSVに含まれるURLそれぞれについてURL展開を行い、展開済URLをKey，言及数をValueとして出力するジョブ。
+出力形式はURLCountと同一形式になるので、再度BuzzExtractに入力することでURL展開済みのBuzzExtractを行うことができる。
+
+* 入力:TextFile形式のBuzzExtractの集計結果。Keyは言及数（`IntWritable`）、Valueは当該回数言及されたURLのCSVリスト（`Text`）
+* 出力:TextFile形式の集計結果。Keyは言及数（`IntWritable`）、Valueは当該回数言及されたURLのCSVリスト（`Text`）
+
+#### URLRefer
+
+``$ hadoop jar <jarname>.jar URLRefer <input_seqFile_Path> <outputPath>[ <th>]``
+
+ツイートデータから、言及されたURLと、言及したユーザのペアを出力するジョブ。Reducer内で短縮URLの展開を行う。オプションで閾値を入力し、Reducer入力時点（非展開URL）での最小言及数を指定できる。
+短縮URLの展開ではURLコネクションを大量に開くので注意する。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 出力:TextFile形式の集計結果。Keyは展開済URL（`Text`）、ValueはユーザID（`LongWritable`）
+
+#### URLReferList
+
+``$ hadoop jar <jarname>.jar URLReferList <input_textFile_Path> <outputPath>``
+
+URLReferの結果から、URLごとに言及したユーザのCSVリストを出力するジョブ。
+
+* 入力:TextFile形式のURLReferの集計結果。Keyは展開済URL（`Text`）、ValueはユーザID（`LongWritable`）
+* 出力:TextFile形式の集計結果。Keyは展開済URL（`Text`）、ValueはユーザIDのCSVリスト（`Text`）
+
+#### URLJoin
+
+``$ hadoop jar <jarname>.jar URLJoin <input_textFile_Path> <outputPath>``
+
+URLReferListの出力から、任意の2つのURLに関するレコード（URLとCSVのペア）を連結したレコードを全て出力するジョブ。すなわちJOIN操作。
+
+元のURLがN件ある場合、JOINの出力はN(N-1)/2件に増える。出力のサイズも相当量に増えるので注意する。
+
+* 入力:TextFile形式のURLReferListの集計結果。Keyは展開済URL（`Text`）、ValueはユーザIDのCSVリスト（`Text`）
+* 出力:TextFile形式の集計結果。KeyはURL,CSVからなるレコード1（`Text`）、ValueはURL,CSVからなるレコード2（`Text`）

@@ -73,7 +73,7 @@ public class AnalyzerMain {
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
 		{"UserTweetCount","TweetCount","UserTweetMap","TextIntReduce"," <input_seqFile_Path> <outputPath>",
 			PROP_SEQ_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},
-		{"FilterUTCount","TweetCount","FilterUserTweetCountMap","FilterUserTweetCountReduce"," <input_seqFile_Path> <outputPath>[ <th>]",
+		{"FilterUTCount","TweetCount","FilterUserTweetCountMap","FilterUserTweetCountReduce"," <input_textFile_Path> <outputPath>[ <th>]",
 			PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_LONG,PROP_INT,SINGLE_REDUCE_NUM},
 		{"UserCount","TweetCount","UserCountMap","TextIntReduce"," <input_textFile_Path> <outputPath>",
 			PROP_TEXT_INPUT,PROP_TEXT_OUTPUT,PROP_TEXT,PROP_INT,SINGLE_REDUCE_NUM},

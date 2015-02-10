@@ -23,20 +23,20 @@ Eclipse Luna(4.4.0)で作業を行ったプロジェクトです．Eclipse上で
 
 ``$ hadoop jar <path>/<jarfilename>.jar [argument]``
 
-とします。argumentにはAnalyzerMainクラス内で規定したMapReduceジョブの指定パターンを入力します。JOB_PROPテーブル内で有効なパターンが指定されています。
+とします。argumentには`AnalyzerMain`クラス内で規定したMapReduceジョブの指定パターンを入力します。`JOB_PROP`テーブル内で有効なパターンが指定されています。
 
-例えば、UserTweetCountというMapRジョブであれば、
+例えば、`UserTweetCount`というMapRジョブであれば、
 
 ``$ hadoop jar ~/lib/ElectionAnalyzer.jar UserTweetCount /user/data/Political2013july/ /user/matsuzawa/utc/1/``
 
 以上のように入力し、実行します。ジョブ名のあとは入力データのパス名、出力先パス名です。
 ジョブ名のあとにはいくつでもコマンドライン引数を追加可能ですが、最初の2つは必ず入力データパス、出力パスと解釈されます。
-その後の引数はarg3,arg4,...と命名され、JobConfオブジェクト経由でMapper/Reducer内からアクセス可能です。
+その後の引数は`arg3,arg4,...`と命名され、`JobConf`オブジェクト経由でMapper/Reducer内からアクセス可能です。
 
 argumentを入力せずにコマンド実行することで、パターンリストが表示されます。
-詳細な利用法は各Mapper/Reducerのソース内コメントあるいは以下のdocを参照して下さい。
+各ジョブの詳細な利用法は各Mapper/Reducerのソース内コメントあるいは以下のdocを参照して下さい。
 
-新たなジョブのためのMapper/Reducerを作成した場合は、JOB_PROPテーブルにそのMapRを使用するためのジョブ情報を登録して下さい。
+新たなジョブのためのMapper/Reducerを作成した場合は、`JOB_PROP`テーブルにそのMapRを使用するためのジョブ情報を登録して下さい。
 必要なジョブ情報は、
 
 * ジョブ名
@@ -57,16 +57,41 @@ argumentを入力せずにコマンド実行することで、パターンリス
 * "DistributedCache"
 
 以上をオプションとして追加できます。Mapper出力Key・Value形式は、Mapper出力とReducer出力の変数形式が異なる場合に使用してください。
-例えばMapperはText-IntWritableのペアを放射するが、Reducerはそれを集計した上でText-Textペアで出力する、といった場合です。
+
+例えばMapperは`Text-IntWritable`のペアを放射するが、Reducerはそれを集計した上で`Text-Text`ペアで出力する、といった場合です。
 MapRフレームワークの制約上、このようなケースではCombinerが使用不可能ですので、Combinerは定義されません。
 逆に、上記オプションが指定されない場合、指定されたReducerがCombinerとしても定義されることに注意してください。
 Mapper/Reducerの出力形式は同一だがCombinerを明示的に使用したくない場合も、このオプションを利用してください。
 その場合は出力Key/Value形式と同一の内容をMapper出力Key/Value形式として登録します。
 
-"DistributedCache"はDistributedCache機能を利用する場合のオプションです。JOB___PROPでは｀`DIST_CACHE``と表記できます。
-このオプションがある場合、コマンドライン引数の3つめ（本来arg3としてJobConfに渡される引数）が、DistributedCacheに配置するファイルパスとなります。
+"DistributedCache"はDistributedCache機能を利用する場合のオプションです。`JOB_PROP`では`DIST_CACHE`と表記できます。
+このオプションがある場合、コマンドライン引数の3つめ（本来`arg3`として`JobConf`に渡される引数）が、DistributedCacheに配置するファイルパスとなります。
 
 これらJOB_PROP要素の書き方はdoc内にも記述されています。
+
+## ビルド（Jarエクスポート）方法
+
+クラスタにアップロードするためのJarファイルの作り方を説明します。
+
+まず、Hadoopクラスタではそのクラスタに採用されているサービスすべてに関連するライブラリが自動的にクラスパスに含まれるので、
+Hadoopフレームワークに関連するクラスを格納しているライブラリを明示的にクラスパスに含める必要はありません。（例：Mapperの基本となる抽象クラス`MapReduceBase`が含まれるライブラリファイルなど）
+
+従って、特にその他の外部ライブラリを使用していないならば、Eclipseのエクスポート機能から作成したソース等を選択してJarファイルにエクスポートするだけです。
+このとき、通常のJar（実行可能Jar/Runneble Jarでない方）を選びます。実行可能JarとするためにはHadoop関連のクラスも全てコンパイルして梱包する必要がありますが、
+上記の通りそちらはすでにクラスタに存在しているので、自分で作成したクラスだけコンパイルされていればいいからです。エントリポイントとして`AnalyzerMain`を指定しておきます。
+
+`Twitter4j`などの外部ライブラリを使用している場合、Hadoopクラスタが認識できる形でそのライブラリファイルを一緒にアップロードする必要があります。
+いくつか方法がありますが、例えばプロジェクト内に`lib`ディレクトリを用意し、必要なライブラリのJarファイルをそこに収めておいて、
+エクスポートの際に一緒にパッケージしてあげる（エクスポートするリソースの選択時に`lib`ディレクトリにチェックを入れる）という手段があります。
+Hadoopクラスタは実行時に必要なクラスを見つけるため、jar内の`lib`ディレクトリを自動で探索するからです。
+松澤はこの方法を使っているので、本プロジェクトの`lib`ディレクトリにいくつか外部ライブラリのJarが入っています。
+
+もしくは実行時、`$ hadoop jar -libjars`というオプションを付けて必要なライブラリファイルを列挙する方法があります。
+ちょうど通常のJavaプログラム実行時に`$ java -cp`と付けて必要なファイルを列挙するのと同様のやり方です。
+こうすると必要なライブラリファイルが実行時にDistributedCache経由でクラスタに配布されるという仕組みで、CDH4以降はこのやり方が推奨されているようです。
+［参考](http://blog.cloudera.com/blog/2011/01/how-to-include-third-party-libraries-in-your-map-reduce-job/)
+
+
 
 
 ## AnalyzerMain

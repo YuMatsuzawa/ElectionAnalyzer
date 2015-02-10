@@ -126,7 +126,7 @@ public class URLExpander {
     /**<s>THIS WON'T WORK.</s>THIS ACTUALLY WORKS.<br>
      * HTTPコネクションを開く際に、リダイレクトに従うという設定をoffにしておくことで、リダイレクト先のLocationをフィールドから取得できる。
      * @param url
-     * @return
+     * @return null or expandedUrl String
      */
     public static String expand(String url) {
     	String shortOrLongUrl = url;

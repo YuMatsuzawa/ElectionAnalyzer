@@ -190,8 +190,8 @@ public class GraphAnalysis {
 		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
 		private Text csv = new Text();
 		
-		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
-		 * @param context
+		/**configureメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param job
 		 */
 		public void configure(JobConf job) {
 			BufferedReader br = null;
@@ -394,8 +394,8 @@ public class GraphAnalysis {
 		private static final String linkname = AnalyzerMain.DIST_LINKNAME;
 		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
 				
-		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
-		 * @param context
+		/**configureメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param job
 		 */		
 		public void configure(JobConf job) {
 			BufferedReader br = null;
@@ -444,8 +444,8 @@ public class GraphAnalysis {
 		private IntWritable numRT = new IntWritable();
 		private DoubleWritable rate = new DoubleWritable();
 		
-		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
-		 * @param context
+		/**configureメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param job
 		 */
 		public void configure(JobConf job) {
 			BufferedReader br = null;
@@ -539,8 +539,8 @@ public class GraphAnalysis {
 		private IntWritable numRT = new IntWritable();
 		private Text rates = new Text();
 		
-		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
-		 * @param context
+		/**configureメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param job
 		 */
 		public void configure(JobConf job) {
 			BufferedReader br = null;
@@ -623,8 +623,8 @@ public class GraphAnalysis {
 		private IntWritable op = new IntWritable();
 		private DoubleWritable rates = new DoubleWritable();
 		
-		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
-		 * @param context
+		/**configureメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param job
 		 */
 		public void configure(JobConf job) {
 			BufferedReader br = null;
@@ -702,8 +702,8 @@ public class GraphAnalysis {
 		private IntWritable op = new IntWritable();
 		private IntWritable inDegree = new IntWritable();
 		
-		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
-		 * @param context
+		/**configureメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにuflistを取り込む。
+		 * @param job
 		 */
 		public void configure(JobConf job) {
 			BufferedReader br = null;
@@ -851,8 +851,8 @@ public class GraphAnalysis {
 		private static HashMap<Long, Integer> uxlist = new HashMap<Long, Integer>();
 
 		private Text userid = new Text();
-		/**setupメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにcacheを取り込む。
-		 * @param context
+		/**configureメソッドはMapperがインスタンス化された時に呼ばれる。ここでHashMapにcacheを取り込む。
+		 * @param job
 		 */
 		public void configure(JobConf job) {
 			BufferedReader br = null;

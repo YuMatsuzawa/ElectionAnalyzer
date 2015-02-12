@@ -121,7 +121,7 @@ Hadoopクラスタは実行時に必要なクラスを見つけるため、jar�
 
 ツイートデータから総ツイート数を数えるジョブ。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyは"tweetNum"（`Text`）、Valueはカウント（`IntWritable`）
 
 #### UserTweetCount
@@ -130,7 +130,7 @@ Hadoopクラスタは実行時に必要なクラスを見つけるため、jar�
 
 ツイートデータからユーザごとにツイート数を数えるジョブ。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。KeyはUserID（`LongWritable`）、Valueはカウント（`IntWritable`）
 
 #### FilterUTCount
@@ -157,7 +157,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 
 ツイートデータから、時刻ごとのツイート数を数えるジョブ。時刻はミリ秒。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueはカウント（`IntWritable`）
 
 #### TimeStamp
@@ -166,7 +166,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 
 ツイートデータから、時刻ごとのツイート数を数えるジョブ。時刻はミリ秒。出力に時刻の可読表現を加える。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 
 #### TimeFreq
@@ -175,7 +175,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 
 ツイートデータから、2013/7/27からさかのぼって1日ごとのツイート数を数えるジョブ。時刻はミリ秒。出力に時刻の可読表現を加える。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 
 #### OriginalTimeFreq
@@ -184,7 +184,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 
 ツイートデータから、2013/7/27からさかのぼって1日ごとのツイート数を数えるジョブ。リツイートを除く。時刻はミリ秒。出力に時刻の可読表現を加える。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 
 #### RetweetCount
@@ -193,7 +193,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 
 ツイートデータから、任意のリツイートについて、それぞれのリツイート数を数えるジョブ。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 
 #### RetweetFreq
@@ -205,22 +205,33 @@ RetweetCountの結果から、リツイート数の頻度分布を作成する�
 * 入力:TextFile形式のRetweetCountの集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 * 出力:TextFile形式の集計結果。Keyはリツイート数（`IntWritable`）、Valueは頻度（`IntWritable`）
 
+### 選挙関連ツイートに関するジョブ。
+
 #### PoliticalTweet
 
 ``$ hadoop jar <jarname>.jar PoliticalTweet <input_seqFile_Path> <outputPath>``
 
 ツイートデータから、政治・選挙関連単語による絞り込みを行い、同形式のツイートデータで再度出力するジョブ。
-データ収集時、
+データ収集時、捕捉されたユーザについて遡及的なツイート取得を行ったために、無関係のツイートも多く含まれていたが、研究ではそれを使用しないことにしたので、再度絞り込んだ。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
-* 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
+* 出力:SequentialFile形式の選挙関連ツイートデータ再抽出出力。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
+
+#### PartyBuzz
+
+``$ hadoop jar <jarname>.jar PartyBuzz <input_seqFile_Path> <outputPath>``
+
+ツイートデータから、政党名ごとのツイート数を数えるジョブ。
+
+対象政党名は、"自民党","民主党","日本維新の会","公明党","みんなの党","生活の党","共産党","社民党","新党改革","みどりの風"。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
+* 出力:TextFile形式の集計結果。Keyは政党名（`Text`）、Valueはカウント（`IntWritable`）
 
 
+### URLによるツイートクラスタリング関連
 
-
-### URLによるツイートクラスタリング関係のジョブ
-
-論文2.4.1項の分析のためのデータ集計ジョブ。
+論文2.4.1項のURLによる分析のためのデータ集計ジョブ。
 
 #### URLCount
 
@@ -228,7 +239,7 @@ RetweetCountの結果から、リツイート数の頻度分布を作成する�
 
 ツイートデータから、言及されたURLと、URLごとの言及数を数えるジョブ。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
 
 #### URLFreq
@@ -266,7 +277,7 @@ BuzzExtractの出力を読み、ValueのCSVに含まれるURLそれぞれにつ�
 ツイートデータから、言及されたURLと、言及したユーザのペアを出力するジョブ。Reducer内で短縮URLの展開を行う。オプションで閾値を入力し、Reducer入力時点（非展開URL）での最小言及数を指定できる。
 短縮URLの展開ではURLコネクションを大量に開くので注意する。
 
-* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRasJSON（`Text`）
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyは展開済URL（`Text`）、ValueはユーザID（`LongWritable`）
 
 #### URLReferList
@@ -288,3 +299,101 @@ URLReferListの出力から、任意の2つのURLに関するレコード（URL�
 
 * 入力:TextFile形式のURLReferListの集計結果。Keyは展開済URL（`Text`）、ValueはユーザIDのCSVリスト（`Text`）
 * 出力:TextFile形式の集計結果。KeyはURL,CSVからなるレコード1（`Text`）、ValueはURL,CSVからなるレコード2（`Text`）
+
+#### 話題ごとのURL関連
+
+元々選挙関連ツイートをさらに話題ごとに絞り込み、その中でURLについてクラスタリングしていたが、それよりもURL全てについてクラスタリングする方がいいと考え、方針転換した。
+従って以下のジョブによる分析は研究後半では使用しなかった。一部、未完成のものもあるので使用すべきでない。
+
+* TopicURLCount
+* TopicURLUser
+* TopicURLUserText
+* TopicURLTitle
+* URLExpand
+* SeqToText
+* FilterURL
+* ThresholdURL
+* PairedURL
+
+話題を考慮しない、URL集合全体としてのクラスタリングは、上記URLRefer/URLReferList/URLJoin等のジョブでJoin済リストを作成した後、
+後述のJaccard係数計算のためのジョブを利用することで可能なので、そちらを使うべきである。
+特にそちらのコードのほうがあとから書き直したものであるため、ワークフローが簡潔になっており、容易に使用できる。
+
+URLExpandとSeqToTextは別用途にも利用できる可能性があるので特記する。
+
+#### URLExpand
+
+``$ hadoop jar <jarname>.jar URLExpand <input_seqFile_Path> <outputPath>``
+
+Seq形式のText-Intファイルで、KeyにURLが入っているものに対し、そのURLの実際のリンク先（展開URL）を取得するジョブ。
+Valueは元の値を保つ。URL展開の結果同一のURLとなったレコードについてはValueは合計される。
+
+* 入力:SeqFile形式のText-IntWritableデータ。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
+* 出力:SeqFile形式の集計結果。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
+
+#### SeqToText
+
+``$ hadoop jar <jarname>.jar SeqToText <input_seqFile_Path> <outputPath>``
+
+Seq形式のText-Intペアからなるデータを、Text形式に単に直すジョブ。
+
+* 入力:SeqFile形式のText-IntWritableデータ。Keyは`Text`、Valueは`IntWritable`であれば内容不問。
+* 出力:入力データをTextFile形式にしたもの。バイナリでないのでテキストエディタで可読。
+
+### リツイートのクラスタリング関連
+
+Base64エンコードを利用しています。テキストデータに含まれるタブやスペース、クオーテーションマーク、文字コード上問題を起こしやすい文字等も、Base64エンコードしてしまうことで確実に取り扱えます。
+
+#### Retweet
+
+``$ hadoop jar <jarname>.jar Retweet <input_seqFile_Path> <outputPath>[ <th in Int>]``
+
+ツイートデータから、リツイートと、リツイートしたユーザを抽出するジョブ。出力はKeyにBase64エンコードされた文面、ValueにユーザIDのCSVが入る。
+最小限のリツイート数を閾値としてオプション引数で指定可能。
+
+* 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
+* 出力:SequentialFile形式の集計結果。Keyはエンコード済文面（`Text`）、ValueはユーザIDのCSV（`IntWritable`）
+
+#### RTJoin
+
+``$ hadoop jar <jarname>.jar RTJoin <input_TextFile_Path> <outputPath>``
+
+Retweetの結果から、任意の2レコードを連結したレコードを出力するジョブ。JOIN操作。
+
+* 入力:SequentialFile形式のRetweetの集計結果。Keyはエンコード済文面（`Text`）、ValueはユーザIDのCSV（`IntWritable`）
+* 出力:TextFile形式の集計結果。Keyはレコード1（`Text`）、Valueはレコード2（`Text`）
+
+#### RTFreq
+
+``$ hadoop jar <jarname>.jar RTFreq <input_TextFile_Path> <outputPath>``
+
+Retweetの結果から、ユーザごとのリツイート回数を数えるジョブ。いわゆるUFリスト（ミーティング資料参照）を作る。
+RetweetFreq（リツイートごと）と違い、ユーザごとである点に注意。
+
+* 入力:SequentialFile形式のRetweetの集計結果。Keyはエンコード済文面（`Text`）、ValueはユーザIDのCSV（`IntWritable`）
+* 出力:TextFile形式の集計結果。KeyはユーザID（`LongWritable`）、Valueはカウント（`IntWritable`）
+
+#### UserRTList
+
+``$ hadoop jar <jarname>.jar UserRTList <input_TextFile_Path> <outputPath>``
+
+Retweetの結果から、ユーザごとのリツイート回数を数えるジョブ。いわゆるUFリスト（ミーティング資料参照）を作る。
+RetweetFreq（リツイートごと）と違い、ユーザごとである点に注意。
+
+* 入力:SequentialFile形式のRetweetの集計結果。Keyはエンコード済文面（`Text`）、ValueはユーザIDのCSV（`IntWritable`）
+* 出力:SequentialFile形式の集計結果。KeyはユーザID（`LongWritable`）、ValueはBase64エンコード済リツイート文面のCSV（`Text`）
+
+#### RTOpinion
+
+``$ hadoop jar <jarname>.jar RTOpinion <input_seqFile_Path> <outputPath> <rtoplist_path>``
+
+UserRTListの結果と、リツイートと意見の対応リスト(rtoplist)から、ユーザとユーザの意見の対応リストをつくるジョブ。いわゆるUOリスト（ミーティング資料参照）を作る。
+rtoplistは後述のJaccard係数による類似度計算を行った上で、Cytoscapeを用いてクラスタリングし、連結成分に属するノードリストを取得して作成する。
+形式としては、Base64エンコードした文面がKey，意見値をValueとするタブ区切りペアを1行とするリストになっていればよい。
+rtoplistはDistributedCacheに格納するので、先に作成してHDFSにアップロードしておく。
+
+* 入力:SequentialFile形式のUserRTList集計結果。KeyはユーザID（`LongWritable`）、ValueはBase64エンコード済リツイート文面のCSV（`Text`）
+* 出力:TextFile形式の集計結果。KeyはユーザID（`LongWritable`）、Valueは2値意見（`IntWritable`）
+
+
+### フォローネットワークデータの分析のためのジョブ

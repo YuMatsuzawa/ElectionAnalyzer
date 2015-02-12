@@ -1,7 +1,7 @@
-# ElectionAnalyzer
+#ElectionAnalyzer
 [toc]
 
-## 概要
+##概要
 
 選挙時期の実データの分析のためのプロジェクト及びパッケージ．
 
@@ -20,7 +20,7 @@ Eclipse Luna(4.4.0)で作業を行ったプロジェクトです．Eclipse上で
 
 なんにせよ必要なクラスを提供するライブラリがきちんとビルドパスに含まれていれば，Eclipse上でエラーチェックしながら作業はできます．
 
-## 使用方法
+##使用方法
 
 クラスタ上で実行するためには、jarファイルに固めてゲートウェイのホームフォルダにアップロードし、
 
@@ -72,7 +72,7 @@ Mapper/Reducerの出力形式は同一だがCombinerを明示的に使用した�
 
 これらJOB_PROP要素の書き方はソース内にも記述されています。
 
-## ビルド（Jarエクスポート）方法
+##ビルド（Jarエクスポート）方法
 
 クラスタにアップロードするためのJarファイルの作り方を説明します。
 
@@ -97,7 +97,7 @@ Hadoopクラスタは実行時に必要なクラスを見つけるため、jar�
 [参考](http://blog.cloudera.com/blog/2011/01/how-to-include-third-party-libraries-in-your-map-reduce-job/)
 こちらの方法を取る場合はクラスタのホームディレクトリに必要なjarをアップロードして、指定します。
 
-## クラスタへのアップロード・実行
+##クラスタへのアップロード・実行
 
 詳しくは研究室内資料に残しておきます。簡単に言うと、
 
@@ -107,15 +107,15 @@ Hadoopクラスタは実行時に必要なクラスを見つけるため、jar�
 これだけです。ゲートウェイとマスターノードはNFSで`/home`を共有しているため、上記のような手順となります。
 ゲートウェイ自体はHadoopクラスタには含まれていないので、`$ hadoop`コマンドを実行できないことに注意してください。
 
-## ジョブリスト
+##ジョブリスト
 
 本プロジェクトで実行可能なデータ分析ジョブについて、入力・出力等を中心に説明
 
-### 基本的なツイート情報に関するジョブ
+###基本的なツイート情報に関するジョブ
 
 データ全体について調べたり、クリーニング等を行うジョブ。
 
-#### TweetCount
+####TweetCount
 
 ``$ hadoop jar <jarname>.jar TweetCount <input_seqFile_Path> <outputPath>``
 
@@ -124,7 +124,7 @@ Hadoopクラスタは実行時に必要なクラスを見つけるため、jar�
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyは"tweetNum"（`Text`）、Valueはカウント（`IntWritable`）
 
-#### UserTweetCount
+####UserTweetCount
 
 ``$ hadoop jar <jarname>.jar UserTweetCount <input_seqFile_Path> <outputPath>``
 
@@ -133,7 +133,7 @@ Hadoopクラスタは実行時に必要なクラスを見つけるため、jar�
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。KeyはUserID（`LongWritable`）、Valueはカウント（`IntWritable`）
 
-#### FilterUTCount
+####FilterUTCount
 
 ``$ hadoop jar <jarname>.jar FilterUTCount <input_textFile_Path> <outputPath>[ <th>]``
 
@@ -142,7 +142,7 @@ UserTweetCountの結果に閾値を当てはめるジョブ。オプションの
 * 入力:TextFile形式のUserTweetCount出力のディレクトリ。KeyはUserID（`LongWritable`）、Valueはカウント（`IntWritable`）
 * 出力:TextFile形式の集計結果。KeyはUserID（`LongWritable`）、Valueは閾値以上のツイート数を持つユーザのカウント（`IntWritable`）
 
-#### UserCount
+####UserCount
 
 ``$ hadoop jar <jarname>.jar UserCount <input_textFile_Path> <outputPath>``
 
@@ -151,7 +151,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 * 入力:TextFile形式のUserTweetCount出力のディレクトリ。KeyはUserID（`LongWritable`）、Valueはカウント（`IntWritable`）
 * 出力:TextFile形式の集計結果。Keyはツイート数あるいは"userNum"（`Text`）、Valueはカウント（`IntWritable`）
 
-#### TimeSeries
+####TimeSeries
 
 ``$ hadoop jar <jarname>.jar TimeSeries <input_seqFile_Path> <outputPath>``
 
@@ -160,7 +160,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueはカウント（`IntWritable`）
 
-#### TimeStamp
+####TimeStamp
 
 ``$ hadoop jar <jarname>.jar TimeStamp <input_seqFile_Path> <outputPath>``
 
@@ -169,7 +169,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 
-#### TimeFreq
+####TimeFreq
 
 ``$ hadoop jar <jarname>.jar TimeFreq <input_seqFile_Path> <outputPath>``
 
@@ -178,7 +178,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 
-#### OriginalTimeFreq
+####OriginalTimeFreq
 
 ``$ hadoop jar <jarname>.jar OriginalTimeFreq <input_seqFile_Path> <outputPath>``
 
@@ -187,7 +187,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 
-#### RetweetCount
+####RetweetCount
 
 ``$ hadoop jar <jarname>.jar RetweetCount <input_seqFile_Path> <outputPath>``
 
@@ -196,7 +196,7 @@ UserTweetCountの結果から、ユーザの総数を数え、かつツイート
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 
-#### RetweetFreq
+####RetweetFreq
 
 ``$ hadoop jar <jarname>.jar RetweetFreq <input_textFile_Path> <outputPath>``
 
@@ -205,9 +205,9 @@ RetweetCountの結果から、リツイート数の頻度分布を作成する�
 * 入力:TextFile形式のRetweetCountの集計結果。Keyはエポックミリ秒（`LongWritable`）、Valueは時刻の可読表現とカウント（`Text`）
 * 出力:TextFile形式の集計結果。Keyはリツイート数（`IntWritable`）、Valueは頻度（`IntWritable`）
 
-### 選挙関連ツイートに関するジョブ。
+###選挙関連ツイートに関するジョブ。
 
-#### PoliticalTweet
+####PoliticalTweet
 
 ``$ hadoop jar <jarname>.jar PoliticalTweet <input_seqFile_Path> <outputPath>``
 
@@ -217,7 +217,7 @@ RetweetCountの結果から、リツイート数の頻度分布を作成する�
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:SequentialFile形式の選挙関連ツイートデータ再抽出出力。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 
-#### PartyBuzz
+####PartyBuzz
 
 ``$ hadoop jar <jarname>.jar PartyBuzz <input_seqFile_Path> <outputPath>``
 
@@ -229,11 +229,11 @@ RetweetCountの結果から、リツイート数の頻度分布を作成する�
 * 出力:TextFile形式の集計結果。Keyは政党名（`Text`）、Valueはカウント（`IntWritable`）
 
 
-### URLによるツイートクラスタリング関連
+###URLによるツイートクラスタリング関連
 
 論文2.4.1項のURLによる分析のためのデータ集計ジョブ。
 
-#### URLCount
+####URLCount
 
 ``$ hadoop jar <jarname>.jar URLCount <input_seqFile_Path> <outputPath>``
 
@@ -242,7 +242,7 @@ RetweetCountの結果から、リツイート数の頻度分布を作成する�
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
 
-#### URLFreq
+####URLFreq
 
 ``$ hadoop jar <jarname>.jar URLJoin <input_textFile_Path> <outputPath>``
 
@@ -251,7 +251,7 @@ URLCountの出力から、URL言及の頻度分布を出力するジョブ。
 * 入力:TextFile形式のURLCountの集計結果。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
 * 出力:TextFile形式の集計結果。Keyは言及数（`IntWritable`）、Valueは頻度（`IntWritable`）
 
-#### BuzzExtract
+####BuzzExtract
 
 ``$ hadoop jar <jarname>.jar BuzzExtract <input_textFile_Path> <outputPath> [<buzzThreshold>]``
 
@@ -260,7 +260,7 @@ URLCountの出力から、閾値以上の回数言及されたURLを、言及回
 * 入力:TextFile形式のURLCountの集計結果。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
 * 出力:TextFile形式の集計結果。Keyは言及数（`IntWritable`）、Valueは当該回数言及されたURLのCSVリスト（`Text`）
 
-#### BuzzURLExpand
+####BuzzURLExpand
 
 ``$ hadoop jar <jarname>.jar BuzzURLExpand <input_textFile_Path> <outputPath>``
 
@@ -270,7 +270,7 @@ BuzzExtractの出力を読み、ValueのCSVに含まれるURLそれぞれにつ�
 * 入力:TextFile形式のBuzzExtractの集計結果。Keyは言及数（`IntWritable`）、Valueは当該回数言及されたURLのCSVリスト（`Text`）
 * 出力:TextFile形式の集計結果。Keyは言及数（`IntWritable`）、Valueは当該回数言及されたURLのCSVリスト（`Text`）
 
-#### URLRefer
+####URLRefer
 
 ``$ hadoop jar <jarname>.jar URLRefer <input_seqFile_Path> <outputPath>[ <th>]``
 
@@ -280,7 +280,7 @@ BuzzExtractの出力を読み、ValueのCSVに含まれるURLそれぞれにつ�
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:TextFile形式の集計結果。Keyは展開済URL（`Text`）、ValueはユーザID（`LongWritable`）
 
-#### URLReferList
+####URLReferList
 
 ``$ hadoop jar <jarname>.jar URLReferList <input_textFile_Path> <outputPath>``
 
@@ -289,7 +289,7 @@ URLReferの結果から、URLごとに言及したユーザのCSVリストを出
 * 入力:TextFile形式のURLReferの集計結果。Keyは展開済URL（`Text`）、ValueはユーザID（`LongWritable`）
 * 出力:TextFile形式の集計結果。Keyは展開済URL（`Text`）、ValueはユーザIDのCSVリスト（`Text`）
 
-#### URLJoin
+####URLJoin
 
 ``$ hadoop jar <jarname>.jar URLJoin <input_textFile_Path> <outputPath>``
 
@@ -300,7 +300,7 @@ URLReferListの出力から、任意の2つのURLに関するレコード（URL�
 * 入力:TextFile形式のURLReferListの集計結果。Keyは展開済URL（`Text`）、ValueはユーザIDのCSVリスト（`Text`）
 * 出力:TextFile形式の集計結果。KeyはURL,CSVからなるレコード1（`Text`）、ValueはURL,CSVからなるレコード2（`Text`）
 
-#### 話題ごとのURL関連
+####話題ごとのURL関連
 
 元々選挙関連ツイートをさらに話題ごとに絞り込み、その中でURLについてクラスタリングしていたが、それよりもURL全てについてクラスタリングする方がいいと考え、方針転換した。
 従って以下のジョブによる分析は研究後半では使用しなかった。一部、未完成のものもあるので使用すべきでない。
@@ -321,7 +321,7 @@ URLReferListの出力から、任意の2つのURLに関するレコード（URL�
 
 URLExpandとSeqToTextは別用途にも利用できる可能性があるので特記する。
 
-#### URLExpand
+####URLExpand
 
 ``$ hadoop jar <jarname>.jar URLExpand <input_seqFile_Path> <outputPath>``
 
@@ -331,7 +331,7 @@ Valueは元の値を保つ。URL展開の結果同一のURLとなったレコー
 * 入力:SeqFile形式のText-IntWritableデータ。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
 * 出力:SeqFile形式の集計結果。KeyはURL（`Text`）、Valueはカウント（`IntWritable`）
 
-#### SeqToText
+####SeqToText
 
 ``$ hadoop jar <jarname>.jar SeqToText <input_seqFile_Path> <outputPath>``
 
@@ -340,11 +340,11 @@ Seq形式のText-Intペアからなるデータを、Text形式に単に直す�
 * 入力:SeqFile形式のText-IntWritableデータ。Keyは`Text`、Valueは`IntWritable`であれば内容不問。
 * 出力:入力データをTextFile形式にしたもの。バイナリでないのでテキストエディタで可読。
 
-### リツイートのクラスタリング関連
+###リツイートのクラスタリング関連
 
 Base64エンコードを利用しています。テキストデータに含まれるタブやスペース、クオーテーションマーク、文字コード上問題を起こしやすい文字等も、Base64エンコードしてしまうことで確実に取り扱えます。
 
-#### Retweet
+####Retweet
 
 ``$ hadoop jar <jarname>.jar Retweet <input_seqFile_Path> <outputPath>[ <th in Int>]``
 
@@ -354,7 +354,7 @@ Base64エンコードを利用しています。テキストデータに含ま�
 * 入力:SequentialFile形式の選挙関連ツイートデータのディレクトリ。KeyにID（`LongWritable`）、ValueにRawJSON（`Text`）
 * 出力:SequentialFile形式の集計結果。Keyはエンコード済文面（`Text`）、ValueはユーザIDのCSV（`IntWritable`）
 
-#### RTJoin
+####RTJoin
 
 ``$ hadoop jar <jarname>.jar RTJoin <input_TextFile_Path> <outputPath>``
 
@@ -363,7 +363,7 @@ Retweetの結果から、任意の2レコードを連結したレコードを出
 * 入力:SequentialFile形式のRetweetの集計結果。Keyはエンコード済文面（`Text`）、ValueはユーザIDのCSV（`IntWritable`）
 * 出力:TextFile形式の集計結果。Keyはレコード1（`Text`）、Valueはレコード2（`Text`）
 
-#### RTFreq
+####RTFreq
 
 ``$ hadoop jar <jarname>.jar RTFreq <input_TextFile_Path> <outputPath>``
 
@@ -373,7 +373,7 @@ RetweetFreq（リツイートごと）と違い、ユーザごとである点に
 * 入力:SequentialFile形式のRetweetの集計結果。Keyはエンコード済文面（`Text`）、ValueはユーザIDのCSV（`IntWritable`）
 * 出力:TextFile形式の集計結果。KeyはユーザID（`LongWritable`）、Valueはカウント（`IntWritable`）
 
-#### UserRTList
+####UserRTList
 
 ``$ hadoop jar <jarname>.jar UserRTList <input_TextFile_Path> <outputPath>``
 
@@ -383,7 +383,7 @@ RetweetFreq（リツイートごと）と違い、ユーザごとである点に
 * 入力:SequentialFile形式のRetweetの集計結果。Keyはエンコード済文面（`Text`）、ValueはユーザIDのCSV（`IntWritable`）
 * 出力:SequentialFile形式の集計結果。KeyはユーザID（`LongWritable`）、ValueはBase64エンコード済リツイート文面のCSV（`Text`）
 
-#### RTOpinion
+####RTOpinion
 
 ``$ hadoop jar <jarname>.jar RTOpinion <input_seqFile_Path> <outputPath> <rtoplist_path>``
 
@@ -397,9 +397,9 @@ rtoplistはDistributedCacheに格納するので、先に作成してHDFSにア�
 * Cache：rtoplist。単なるテキストファイルでよい。HDFSにアップロードしておく。
 
 
-### 類似度ネットワーク分析のためのジョブ
+###類似度ネットワーク分析のためのジョブ
 
-#### JaccardLink
+####JaccardLink
 
 ``$ hadoop jar <jarname>.jar JaccardLink <input_textFile_Path> <outputPath>[ <th in Double>]``
 
@@ -409,7 +409,7 @@ URLJoinあるいはRTJoinを用いてJoinしたデータから、全てのURLペ
 * 入力:TextFile形式のURLJoinやRTJoinの集計結果。Keyはレコード1（`Text`）、Valueはレコード2（`Text`）
 * 出力:TextFile形式の集計結果。Keyはカンマで区切ったレコード1のノードKeyとレコード2のノードKey（`Text`）、ValueはJaccard係数（`DoubleWritable`）
 
-#### JaccardLinkDec
+####JaccardLinkDec
 
 ``$ hadoop jar <jarname>.jar JaccardLinkDec <input_textFile_Path> <outputPath>[ <th in Double>]``
 
@@ -419,11 +419,11 @@ Base64エンコードされているJoin済データに対するJaccardLink。�
 * 入力:TextFile形式のURLJoinやRTJoinの集計結果。Keyはレコード1（`Text`）、Valueはレコード2（`Text`）
 * 出力:TextFile形式の集計結果。Keyはカンマで区切ったレコード1のノードKeyとレコード2のノードKey（`Text`）、ValueはJaccard係数（`DoubleWritable`）
 
-### フォローネットワークデータ分析のためのジョブ
+###フォローネットワークデータ分析のためのジョブ
 
 ここからはフォローネットワークデータも使います。フォローネットワークデータはKeyにユーザProfile、ValueにネットワークCSVの入ったSeqFileです。
 
-#### VFAttitude
+####VFAttitude
 
 ``$ hadoop jar <jarname>.jar VFAttitude <input_seqFile_Path> <outputPath> <uxlist_Path>``
 
@@ -434,7 +434,7 @@ DistCacheにUFリストを入れる。論文では採用しなかったが、ミ
 * 出力:TextFile形式の集計結果。Keyはリツイート数（`IntWritable`）、Valueは周囲のヴォーカル率（`DoubleWritable`）
 * Cache：UFリスト。
 
-#### VFAverage
+####VFAverage
 
 ``$ hadoop jar <jarname>.jar VFAverage <input_seqFile_Path> <outputPath> <uxlist_Path>``
 
@@ -445,7 +445,7 @@ DistCacheにUFリストを入れる。論文では採用しなかったが、ミ
 * 出力:TextFile形式の集計結果。Keyはリツイート数（`IntWritable`）、Valueは周囲の平均RT数（`DoubleWritable`）
 * Cache：UFリスト。
 
-#### VFOpinion
+####VFOpinion
 
 ``$ hadoop jar <jarname>.jar VFOpinion <input_seqFile_Path> <outputPath> <uxlist_Path>``
 
@@ -456,7 +456,7 @@ DistCacheにUOリストを入れる。論文のデータ分析章の最後の図
 * 出力:TextFile形式の集計結果。Keyは2値意見（`IntWritable`）、Valueは周囲の平均意見（`DoubleWritable`）
 * Cache：UOリスト。
 
-#### VDegree
+####VDegree
 
 ``$ hadoop jar <jarname>.jar VDegree <input_textFile_Path> <outputPath> <uxlist_Path>``
 
@@ -466,7 +466,7 @@ DropFilterで絞り込んだテキスト形式のフォローネットワーク�
 * 出力:TextFile形式の集計結果。Keyは意見（`IntWritable`）、Valueは入次数（`DoubleWritable`）
 * Cache：UOリスト。
 
-#### TotalVDegree
+####TotalVDegree
 
 ``$ hadoop jar <jarname>.jar TotalVDegree <input_textFile_Path> <outputPath>``
 
@@ -475,7 +475,7 @@ DropFilterで絞り込んだテキスト形式のフォローネットワーク�
 * 入力:TextFile形式のフォローネットワークデータ。KeyはUserID（`Text`）、ValueはネットワークCSV（`Text`）
 * 出力:TextFile形式の集計結果。Keyは意見（`IntWritable`）、Valueは入次数（`DoubleWritable`）
 
-### フォローネットワークデータの整形関連ジョブ
+###フォローネットワークデータの整形関連ジョブ
 
 フォローネットワークはかなり大きなデータであり、また一部のデータはKeyあるいはValueのサイズが大きすぎるためHeap Spaceエラーとなる。
 ワークアラウンドとしていらないデータを削った小さなネットワークデータに作り変えるなどの作業が必要だった。
@@ -485,7 +485,7 @@ DropFilterで絞り込んだテキスト形式のフォローネットワーク�
 
 以下のDropFilterのみ、実際に使用した。
 
-#### DropFilter
+####DropFilter
 
 ``$ hadoop jar <jarname>.jar VFOpinion <input_seqFile_Path> <outputPath> <uxlist_Path>``
 

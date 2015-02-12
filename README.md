@@ -394,6 +394,104 @@ rtoplistはDistributedCacheに格納するので、先に作成してHDFSにア�
 
 * 入力:SequentialFile形式のUserRTList集計結果。KeyはユーザID（`LongWritable`）、ValueはBase64エンコード済リツイート文面のCSV（`Text`）
 * 出力:TextFile形式の集計結果。KeyはユーザID（`LongWritable`）、Valueは2値意見（`IntWritable`）
+* Cache：rtoplist。単なるテキストファイルでよい。HDFSにアップロードしておく。
 
 
-### フォローネットワークデータの分析のためのジョブ
+### 類似度ネットワーク分析のためのジョブ
+
+#### JaccardLink
+
+``$ hadoop jar <jarname>.jar JaccardLink <input_textFile_Path> <outputPath>[ <th in Double>]``
+
+URLJoinあるいはRTJoinを用いてJoinしたデータから、全てのURLペアあるいはRTペアについてJaccard係数を算出するジョブ。
+オプション引数で閾値を指定。出力はカンマとタブ区切りテキストで、Node1,Node2 JaccardCoeff.となっている。
+
+* 入力:TextFile形式のURLJoinやRTJoinの集計結果。Keyはレコード1（`Text`）、Valueはレコード2（`Text`）
+* 出力:TextFile形式の集計結果。Keyはカンマで区切ったレコード1のノードKeyとレコード2のノードKey（`Text`）、ValueはJaccard係数（`DoubleWritable`）
+
+#### JaccardLinkDec
+
+``$ hadoop jar <jarname>.jar JaccardLinkDec <input_textFile_Path> <outputPath>[ <th in Double>]``
+
+Base64エンコードされているJoin済データに対するJaccardLink。従ってRTJoinのデータで内容を確認したいならこちらを使う。
+出力はBase64デコードされているので可読。
+
+* 入力:TextFile形式のURLJoinやRTJoinの集計結果。Keyはレコード1（`Text`）、Valueはレコード2（`Text`）
+* 出力:TextFile形式の集計結果。Keyはカンマで区切ったレコード1のノードKeyとレコード2のノードKey（`Text`）、ValueはJaccard係数（`DoubleWritable`）
+
+### フォローネットワークデータ分析のためのジョブ
+
+ここからはフォローネットワークデータも使います。フォローネットワークデータはKeyにユーザProfile、ValueにネットワークCSVの入ったSeqFileです。
+
+#### VFAttitude
+
+``$ hadoop jar <jarname>.jar VFAttitude <input_seqFile_Path> <outputPath> <uxlist_Path>``
+
+フォローネットワークデータから、UFリストに載っているユーザについて、リツイート数と、そのユーザの周囲のヴォーカルユーザ（UFリストに載っているユーザ）の比率を求めるジョブ。
+DistCacheにUFリストを入れる。論文では採用しなかったが、ミーティング資料に結果あり（散布図）。
+
+* 入力:SequentialFile形式のフォローネットワークデータ。KeyはUserProfile（`Text`）、ValueはネットワークCSV（`Text`）
+* 出力:TextFile形式の集計結果。Keyはリツイート数（`IntWritable`）、Valueは周囲のヴォーカル率（`DoubleWritable`）
+* Cache：UFリスト。
+
+#### VFAverage
+
+``$ hadoop jar <jarname>.jar VFAverage <input_seqFile_Path> <outputPath> <uxlist_Path>``
+
+フォローネットワークデータから、UFリストに載っているユーザについて、リツイート数と、そのユーザの周囲のヴォーカルユーザ（UFリストに載っているユーザ）の平均RT数を求めるジョブ。
+DistCacheにUFリストを入れる。論文では採用しなかったが、ミーティング資料に結果あり（散布図）。
+
+* 入力:SequentialFile形式のフォローネットワークデータ。KeyはUserProfile（`Text`）、ValueはネットワークCSV（`Text`）
+* 出力:TextFile形式の集計結果。Keyはリツイート数（`IntWritable`）、Valueは周囲の平均RT数（`DoubleWritable`）
+* Cache：UFリスト。
+
+#### VFOpinion
+
+``$ hadoop jar <jarname>.jar VFOpinion <input_seqFile_Path> <outputPath> <uxlist_Path>``
+
+フォローネットワークデータから、UOリストに載っているユーザについて、2値意見と、そのユーザの周囲のヴォーカルユーザ（UOリストに載っているユーザ）の平均意見を求めるジョブ。
+DistCacheにUOリストを入れる。論文のデータ分析章の最後の図。
+
+* 入力:SequentialFile形式のフォローネットワークデータ。KeyはUserProfile（`Text`）、ValueはネットワークCSV（`Text`）
+* 出力:TextFile形式の集計結果。Keyは2値意見（`IntWritable`）、Valueは周囲の平均意見（`DoubleWritable`）
+* Cache：UOリスト。
+
+#### VDegree
+
+``$ hadoop jar <jarname>.jar VDegree <input_textFile_Path> <outputPath> <uxlist_Path>``
+
+DropFilterで絞り込んだテキスト形式のフォローネットワークデータから、UOリストに載っているユーザについて、意見ごとに入次数を調べるジョブ。
+
+* 入力:TextFile形式のフォローネットワークデータ。KeyはUserId（`Text`）、ValueはネットワークCSV（`Text`）
+* 出力:TextFile形式の集計結果。Keyは意見（`IntWritable`）、Valueは入次数（`DoubleWritable`）
+* Cache：UOリスト。
+
+#### TotalVDegree
+
+``$ hadoop jar <jarname>.jar TotalVDegree <input_textFile_Path> <outputPath>``
+
+DropFilterで絞り込んだテキスト形式のフォローネットワークデータから、任意のユーザについて、入次数を調べるジョブ。比較用。
+
+* 入力:TextFile形式のフォローネットワークデータ。KeyはUserID（`Text`）、ValueはネットワークCSV（`Text`）
+* 出力:TextFile形式の集計結果。Keyは意見（`IntWritable`）、Valueは入次数（`DoubleWritable`）
+
+### フォローネットワークデータの整形関連ジョブ
+
+フォローネットワークはかなり大きなデータであり、また一部のデータはKeyあるいはValueのサイズが大きすぎるためHeap Spaceエラーとなる。
+ワークアラウンドとしていらないデータを削った小さなネットワークデータに作り変えるなどの作業が必要だった。
+
+しかし、クラスタのチューニングを行った結果比較的大きなデータもある程度そのまま扱えるようになったので、大部分不要になった。
+ただし、元データの一部にエラーがあったので、そのブロックのみ除外した。
+
+以下のDropFilterのみ、実際に使用した。
+
+#### DropFilter
+
+``$ hadoop jar <jarname>.jar VFOpinion <input_seqFile_Path> <outputPath> <uxlist_Path>``
+
+フォローネットワークデータから、UOリストに載っているユーザのデータのみ抽出し、ダウンサイズしたネットワークデータを作るジョブ。
+シミュレーションのための実ネットワークサンプルとしても使用できる。
+
+* 入力:SequentialFile形式のフォローネットワークデータ。KeyはUserProfile（`Text`）、ValueはネットワークCSV（`Text`）
+* 出力:TextFile形式のフォローネットワークデータ。KeyはUserID（`Text`）、ValueはネットワークCSV（`Text`）
+* Cache：UOリスト。

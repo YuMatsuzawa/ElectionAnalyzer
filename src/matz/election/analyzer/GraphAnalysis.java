@@ -26,10 +26,6 @@ import twitter4j.User;
  * @author YuMatsuzawa
  *
  */
-/**
- * @author Yu
- *
- */
 public class GraphAnalysis {
 
 	/**PairedURL等を使ってJoinした、URL1,(comma-separated userid list)\tURL2,(comma-separated userid list)形式のText入力に対し、<br>
